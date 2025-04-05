@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "920430939888",
+    "project_id": "heartcloud-c5817",
+    "storage_bucket": "heartcloud-c5817.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:920430939888:android:bf9c36a9908c7e3787fc35",
+        "android_client_info": {
+          "package_name": "com.example.heartcloud"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALx99icKBWmstPrzKiU0NUOEgHhSCS4P0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

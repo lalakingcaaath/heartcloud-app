@@ -1,0 +1,184 @@
+import 'package:flutter/material.dart';
+import 'package:heartcloud/pages/login.dart';
+import 'package:heartcloud/utils/colors.dart';
+import 'package:heartcloud/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
+
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final TextEditingController _firstName = TextEditingController();
+  final TextEditingController _lastName = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  String? _selectedRole;
+
+  @override
+  void dispose() {
+    _firstName.dispose();
+    _lastName.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _registerUser() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+    String confirmPassword = _confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Passwords do not match")),
+      );
+      return;
+    }
+
+    if (_selectedRole == null || _selectedRole!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a role")),
+      );
+      return;
+    }
+
+    try {
+      // Generate a unique user ID
+      String uid = const Uuid().v4(); // Generates a random unique ID
+
+      await FirebaseFirestore.instance.collection("users").doc(uid).set({
+        "uid": uid,
+        "firstName": _firstName.text,
+        "lastName": _lastName.text,
+        "email": email,
+        "password": password, // Store password as plain text (Not recommended in production)
+        "role": _selectedRole,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Registration Successful!")),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An error occurred: ${e.toString()}")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: [darkBlue, mediumBlue, lightBlue],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter)),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SingleChildScrollView(
+          child: Container(
+            margin: const EdgeInsets.only(left: 40, right: 40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  margin: const EdgeInsets.only(top: 60),
+                  child: Text(
+                    "Register",
+                    style: TextStyle(color: headerColor1, fontSize: 40),
+                  ),
+                ),
+                Container(
+                  child: Text(
+                    "Welcome to HeartCloud - Let's create your account",
+                    style: TextStyle(color: headerColor1, fontSize: 10),
+                  ),
+                ),
+                const SizedBox(height: 50),
+                Center(child: FirstName(controller: _firstName)),
+                const SizedBox(height: 20),
+                Center(child: LastName(controller: _lastName)),
+                const SizedBox(height: 20),
+                Center(child: EmailField()),
+                const SizedBox(height: 20),
+                Center(child: PasswordField()),
+                const SizedBox(height: 20),
+                Center(child: ConfirmPasswordField(passwordController: _passwordController)),
+                const SizedBox(height: 20),
+                Center(
+                  child: RoleDropdown(
+                    selectedRole: _selectedRole,
+                    onRoleChanged: (String role) {
+                      setState(() {
+                        _selectedRole = role;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(height: 50),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: _registerUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: darkBlue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 120, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text("Register"),
+                  ),
+                ),
+                const SizedBox(height: 50),
+                Center(
+                  child: Text(
+                    "Already have an account?",
+                    style: TextStyle(
+                      color: headerColor1,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "Sign In",
+                      style: TextStyle(
+                        color: headerColor2,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
