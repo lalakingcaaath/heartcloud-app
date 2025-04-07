@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:heartcloud/widgets.dart';
 import 'package:heartcloud/utils/colors.dart';
@@ -13,6 +15,7 @@ class Addpatient extends StatefulWidget {
 class _AddpatientState extends State<Addpatient> {
   final TextEditingController _firstName = TextEditingController();
   final TextEditingController _lastName = TextEditingController();
+  final TextEditingController _contactInfo = TextEditingController();
   final _ageController = TextEditingController();
   int _selectedIndex = 0;
 
@@ -26,6 +29,7 @@ class _AddpatientState extends State<Addpatient> {
   void dispose(){
     _firstName.dispose();
     _lastName.dispose();
+    _contactInfo.dispose();
     super.dispose();
   }
 
@@ -61,12 +65,55 @@ class _AddpatientState extends State<Addpatient> {
               Center(child: GenderDropdown()),
               SizedBox(height: 20),
               Center(child: AgeField(controller: _ageController)),
+              SizedBox(height: 20),
+              Center(child: ContactInformation(controller: _contactInfo)),
               SizedBox(height: 30),
               Row(
                 children: [
                   Expanded(
                       child: GestureDetector(
-                        onTap: (){},
+                        onTap: () async {
+                          try {
+                            final String firstName = _firstName.text.trim();
+                            final String lastName = _lastName.text.trim();
+                            final String contactInfo = _contactInfo.text.trim();
+                            final String ageText = _ageController.text.trim();
+                            final int? age = int.tryParse(ageText);
+
+                            // Optionally, validate fields
+                            if (firstName.isEmpty || lastName.isEmpty || contactInfo.isEmpty || age == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Please fill out all fields correctly."))
+                              );
+                              return;
+                            }
+
+                            // Store to Firestore
+                            await FirebaseFirestore.instance.collection('patient').add({
+                              'firstName': firstName,
+                              'lastName': lastName,
+                              'contactInfo': contactInfo,
+                              'age': age,
+                              'createdAt': FieldValue.serverTimestamp(),
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Patient added successfully!"))
+                            );
+
+                            // Optionally clear fields
+                            _firstName.clear();
+                            _lastName.clear();
+                            _contactInfo.clear();
+                            _ageController.clear();
+
+                          } catch (e) {
+                            print("Error adding patient: $e");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Failed to add patient."))
+                            );
+                          }
+                        },
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(

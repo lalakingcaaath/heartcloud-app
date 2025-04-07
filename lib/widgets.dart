@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:heartcloud/pages/patient_profile/patientProfilePage.dart';
 import 'package:heartcloud/utils/colors.dart';
 
@@ -320,6 +321,44 @@ class _GenderDropdownState extends State<GenderDropdown> {
     );
   }
 }
+
+class ContactInformation extends StatelessWidget {
+  final TextEditingController controller;
+
+  const ContactInformation({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+          prefixIcon: const Icon(Icons.contacts),
+          labelText: "Contact Information",
+          hintText: "Contact Information",
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.black),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Colors.black),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 
 class StatusCard extends StatefulWidget {
