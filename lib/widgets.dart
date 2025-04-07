@@ -70,22 +70,22 @@ class LastName extends StatelessWidget {
 }
 
 class EmailField extends StatelessWidget {
+  final TextEditingController controller;
 
-  const EmailField({super.key});
+  const EmailField({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       child: TextField(
+        controller: controller,
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white,
           prefixIcon: const Icon(Icons.email_outlined),
           labelText: "Email Address",
           hintText: "example@email.com",
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           enabledBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Colors.black),
             borderRadius: BorderRadius.circular(8),
@@ -100,27 +100,24 @@ class EmailField extends StatelessWidget {
   }
 }
 
-class AgeField extends StatefulWidget {
-  const AgeField({super.key});
+class AgeField extends StatelessWidget {
+  final TextEditingController controller;
 
-  @override
-  State<AgeField> createState() => _AgeFieldState();
-}
+  const AgeField({super.key, required this.controller});
 
-class _AgeFieldState extends State<AgeField> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white,
-          prefixIcon: const Icon(Icons.email_outlined),
+          prefixIcon: const Icon(Icons.cake_outlined),
           labelText: "Age",
           hintText: "Input patient age",
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           enabledBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Colors.black),
             borderRadius: BorderRadius.circular(8),
@@ -136,8 +133,11 @@ class _AgeFieldState extends State<AgeField> {
 }
 
 
+
 class PasswordField extends StatefulWidget {
-  const PasswordField({super.key});
+  final TextEditingController controller;
+
+  const PasswordField({super.key, required this.controller});
 
   @override
   State<PasswordField> createState() => _PasswordFieldState();
@@ -150,6 +150,7 @@ class _PasswordFieldState extends State<PasswordField> {
   Widget build(BuildContext context) {
     return SizedBox(
       child: TextField(
+        controller: widget.controller,
         obscureText: _obscureText,
         decoration: InputDecoration(
           filled: true,
@@ -165,9 +166,7 @@ class _PasswordFieldState extends State<PasswordField> {
           ),
           labelText: "Password",
           hintText: "*********",
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           enabledBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Colors.black),
             borderRadius: BorderRadius.circular(8),
@@ -182,10 +181,11 @@ class _PasswordFieldState extends State<PasswordField> {
   }
 }
 
-class ConfirmPasswordField extends StatefulWidget {
-  final TextEditingController passwordController;
 
-  const ConfirmPasswordField({super.key, required this.passwordController});
+class ConfirmPasswordField extends StatefulWidget {
+  final TextEditingController controller;
+
+  const ConfirmPasswordField({super.key, required this.controller});
 
   @override
   State<ConfirmPasswordField> createState() => _ConfirmPasswordFieldState();
@@ -198,6 +198,7 @@ class _ConfirmPasswordFieldState extends State<ConfirmPasswordField> {
   Widget build(BuildContext context) {
     return SizedBox(
       child: TextField(
+        controller: widget.controller,
         obscureText: _obscureText,
         decoration: InputDecoration(
           filled: true,
@@ -211,11 +212,9 @@ class _ConfirmPasswordFieldState extends State<ConfirmPasswordField> {
               });
             },
           ),
-          labelText: "Password",
+          labelText: "Confirm Password",
           hintText: "*********",
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           enabledBorder: OutlineInputBorder(
             borderSide: const BorderSide(color: Colors.black),
             borderRadius: BorderRadius.circular(8),

@@ -87,9 +87,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Center(child: const EmailField()),
+                  Center(child: EmailField(controller: _emailController)),
                   const SizedBox(height: 20),
-                  Center(child: const PasswordField()),
+                  Center(child: PasswordField(controller: _passwordController)),
                   Align(
                     alignment: Alignment.centerRight,
                     child: Padding(

@@ -77,7 +77,7 @@ class _ChangePasswordState extends State<ChangePassword> {
               ),
               SizedBox(height: 10),
               Center(
-                child: EmailField(),
+                child: EmailField(controller: _emailController),
               ),
               SizedBox(height: 20),
               Row(

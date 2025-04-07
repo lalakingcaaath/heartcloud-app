@@ -3,7 +3,7 @@ import 'package:heartcloud/pages/login.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -50,15 +50,17 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     try {
-      // Generate a unique user ID
-      String uid = const Uuid().v4(); // Generates a random unique ID
+      // Register user with Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
 
-      await FirebaseFirestore.instance.collection("users").doc(uid).set({
-        "uid": uid,
-        "firstName": _firstName.text,
-        "lastName": _lastName.text,
-        "email": email,
-        "password": password, // Store password as plain text (Not recommended in production)
+      User? user = userCredential.user;
+
+      // Store additional info in Firestore
+      await FirebaseFirestore.instance.collection("users").doc(user!.uid).set({
+        "uid": user.uid,
+        "firstName": _firstName.text.trim(),
+        "lastName": _lastName.text.trim(),
         "role": _selectedRole,
         "createdAt": FieldValue.serverTimestamp(),
       });
@@ -113,11 +115,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 20),
                 Center(child: LastName(controller: _lastName)),
                 const SizedBox(height: 20),
-                Center(child: EmailField()),
+                Center(child: EmailField(controller: _emailController)), // <- Updated here
                 const SizedBox(height: 20),
-                Center(child: PasswordField()),
+                Center(child: PasswordField(controller: _passwordController)), // <- Updated here
                 const SizedBox(height: 20),
-                Center(child: ConfirmPasswordField(passwordController: _passwordController)),
+                Center(child: ConfirmPasswordField(controller: _confirmPasswordController)), // <- Updated here
                 const SizedBox(height: 20),
                 Center(
                   child: RoleDropdown(

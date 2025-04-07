@@ -13,6 +13,7 @@ class Addpatient extends StatefulWidget {
 class _AddpatientState extends State<Addpatient> {
   final TextEditingController _firstName = TextEditingController();
   final TextEditingController _lastName = TextEditingController();
+  final _ageController = TextEditingController();
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -53,10 +54,13 @@ class _AddpatientState extends State<Addpatient> {
                 ],
               ),
               SizedBox(height: 50),
+              Center(child: FirstName(controller: _firstName)),
+              SizedBox(height: 20),
+              Center(child: LastName(controller: _lastName)),
               SizedBox(height: 20),
               Center(child: GenderDropdown()),
               SizedBox(height: 20),
-              Center(child: AgeField()),
+              Center(child: AgeField(controller: _ageController)),
               SizedBox(height: 30),
               Row(
                 children: [
