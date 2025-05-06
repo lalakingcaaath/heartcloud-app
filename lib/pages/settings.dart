@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:heartcloud/pages/settings/manageProfile.dart';
 import 'package:heartcloud/pages/settings/password/changePassword.dart';
 import 'package:heartcloud/pages/settings/terms.dart';
 import 'package:heartcloud/pages/settings/userManual.dart';
@@ -114,27 +115,40 @@ class _SettingsState extends State<Settings> {
                 ],
               ),
               SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.person),
-                  SizedBox(width: 20),
-                  Text(
-                    "Manage Profile", style: TextStyle(
-                      fontSize: 17
-                  ),
-                  ),
-                  Spacer(),
-                  GestureDetector(
-                    onTap: (){},
-                    child: Icon(Icons.arrow_forward),
+              GestureDetector(
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => ProfilePage()
                   )
-                ],
+                  );
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 20),
+                    Text(
+                      "Manage Profile", style: TextStyle(
+                        fontSize: 17
+                    ),
+                    ),
+                    Spacer(),
+                    GestureDetector(
+                      onTap: (){},
+                      child: Icon(Icons.arrow_forward),
+                    )
+                  ],
+                ),
               ),
               SizedBox(height: 30),
               GestureDetector(
-                onTap: (){},
+                onTap: (){
+                  Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => ChangePassword()
+                  )
+                  );
+                },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,

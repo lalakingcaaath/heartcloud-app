@@ -15,6 +15,7 @@ class Addpatient extends StatefulWidget {
 class _AddpatientState extends State<Addpatient> {
   final TextEditingController _firstName = TextEditingController();
   final TextEditingController _lastName = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _contactInfo = TextEditingController();
   final _ageController = TextEditingController();
   int _selectedIndex = 0;
@@ -29,6 +30,7 @@ class _AddpatientState extends State<Addpatient> {
   void dispose(){
     _firstName.dispose();
     _lastName.dispose();
+    _emailController.dispose();
     _contactInfo.dispose();
     super.dispose();
   }

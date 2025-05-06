@@ -33,13 +33,14 @@ class _ChangePasswordState extends State<ChangePassword> {
               SizedBox(height: 70),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  GestureDetector(
-                      onTap: (){
-                      Navigator.pop(context);
-                    },
-                      child: Icon(Icons.arrow_back, size: 35)),
+                  IconButton(
+                      onPressed: (){
+                        Navigator.pop(context);
+                      },
+                      icon: Icon(Icons.arrow_back, size: 35, color: darkBlue)
+                  ),
                   SizedBox(width: 10),
                   Text(
                     "Back",
@@ -48,7 +49,49 @@ class _ChangePasswordState extends State<ChangePassword> {
                     ),
                   ),
                   Spacer(),
-                  Icon(Icons.info_rounded, size: 35, color: darkBlue)
+                  IconButton(
+                      onPressed: (){
+                        showDialog(
+                            context: context,
+                            builder: (BuildContext context) => Dialog(
+                              backgroundColor: darkBlue,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: 200,
+                                  minHeight: 100,
+                                  maxWidth: 300
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(25),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        "Enter your email address and tap 'Reset Passsword'.\n\n"
+                                            "We'll send you an email with instructions to create new password.",
+                                        softWrap: true, textAlign: TextAlign.justify, style: TextStyle(
+                                          color: Colors.white
+                                        ),
+                                      ),
+                                      TextButton(
+                                          onPressed: (){
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text(
+                                            "Close", style: TextStyle(
+                                            color: Colors.white
+                                          ),
+                                          )
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                        );
+                      },
+                      icon: Icon(Icons.info_outline, size: 35, color: darkBlue)
+                  )
                 ],
               ),
               SizedBox(height: 30),
