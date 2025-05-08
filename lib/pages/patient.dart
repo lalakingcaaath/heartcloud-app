@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/utils/bottom_navbar.dart';
 import 'package:heartcloud/widgets.dart';
 import 'addpatient.dart';
+import 'patient_profile/patientProfilePage.dart';
 
 class PatientList extends StatefulWidget {
   const PatientList({super.key});
 
   @override
   State<PatientList> createState() => _PatientListState();
-
 }
 
 class _PatientListState extends State<PatientList> {
@@ -19,6 +21,11 @@ class _PatientListState extends State<PatientList> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  String formatDate(Timestamp timestamp) {
+    DateTime dateTime = timestamp.toDate();
+    return DateFormat('MMM dd, yyyy').format(dateTime);
   }
 
   @override
@@ -31,117 +38,134 @@ class _PatientListState extends State<PatientList> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(height: 70),
-              SearchBar(
-                leading: const Icon(Icons.search),
+              const SizedBox(height: 70),
+              const SearchBar(
+                leading: Icon(Icons.search),
                 hintText: "Search for patients",
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Patient List", style: TextStyle(
-                    color: darkBlue,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold
+                    "Patient List",
+                    style: TextStyle(
+                        color: darkBlue,
+                        fontSize: 25,
+                        fontWeight: FontWeight.bold
+                    ),
                   ),
-                  ),
-                  Spacer(),
+                  const Spacer(),
                   GestureDetector(
-                    onTap: (){},
-                    child: Icon(Icons.sort),
+                    onTap: () {},
+                    child: const Icon(Icons.sort),
                   )
                 ],
               ),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
                   Text(
-                    "Name", style: TextStyle(
-                    fontSize: 14
-                  ),
+                    "Name",
+                    style: TextStyle(fontSize: 14),
                   ),
                   Spacer(),
                   Text(
-                    "Registered Date", style: TextStyle(
-                      fontSize: 14
-                  ),
+                    "Registered Date",
+                    style: TextStyle(fontSize: 14),
                   ),
                 ],
               ),
-              SizedBox(
-                height: 75,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: const [
-                    PatientCard(
-                      name: "John Dela Cruz",
-                      date: "Mar. 25, 2025",
-                      isHighlighted: true,
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 75,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: const [
-                    PatientCard(
-                      name: "Mary Grace Piattos",
-                      date: "Feb. 25, 2025",
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 75,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: const [
-                    PatientCard(
-                      name: "John Dela Cruz",
-                      date: "Mar. 25, 2025",
-                      isHighlighted: true,
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 75,
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: const [
-                    PatientCard(
-                      name: "Mary Grace Piattos",
-                      date: "Feb. 25, 2025",
-                    )
-                  ],
-                ),
+              const SizedBox(height: 50),
+
+              // StreamBuilder to fetch patient data from Firestore
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('patient').snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Text(
+                        "No Patient Available",
+                        style: TextStyle(fontSize: 18, color: darkBlue),
+                      ),
+                    );
+                  }
+
+                  final patients = snapshot.data!.docs;
+
+                  return Column(
+                    children: patients.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      var patient = entry.value;
+
+                      // Format patient data
+                      String formattedDate;
+                      try {
+                        formattedDate = formatDate(patient['createdAt']);
+                      } catch (e) {
+                        formattedDate = "No date available";
+                      }
+
+                      // Alternate background color for cards
+                      Color cardColor = index.isEven
+                          ? PatientCardColor1
+                          : PatientCardColor2;
+
+                      return Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              // Navigate to the PatientProfile page with the patient's data
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PatientProfile(
+                                    patientData: patient,  // Pass the patient data here
+                                  ),
+                                ),
+                              );
+                            },
+                            child: PatientCard(
+                              name: "${patient['firstName']} ${patient['lastName']}",
+                              patientData: patient,
+                              date: formattedDate,
+                              backgroundColor: cardColor,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                      );
+                    }).toList(),
+                  );
+                },
               ),
             ],
           ),
         ),
       ),
       bottomNavigationBar: BottomNavBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: (){
+        onPressed: () {
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => Addpatient()
-              )
+            context,
+            MaterialPageRoute(
+              builder: (context) => const Addpatient(),
+            ),
           );
         },
         backgroundColor: darkBlue,
         shape: const CircleBorder(),
-        child: Icon(
+        child: const Icon(
           Icons.add,
           color: Colors.white,
         ),

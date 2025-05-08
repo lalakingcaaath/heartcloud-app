@@ -18,7 +18,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  String? _selectedRole;
 
   @override
   void dispose() {
@@ -42,13 +41,6 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    if (_selectedRole == null || _selectedRole!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select a role")),
-      );
-      return;
-    }
-
     try {
       // Register user with Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
@@ -61,7 +53,6 @@ class _RegisterPageState extends State<RegisterPage> {
         "uid": user.uid,
         "firstName": _firstName.text.trim(),
         "lastName": _lastName.text.trim(),
-        "role": _selectedRole,
         "createdAt": FieldValue.serverTimestamp(),
       });
 
@@ -120,17 +111,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 Center(child: PasswordField(controller: _passwordController)), // <- Updated here
                 const SizedBox(height: 20),
                 Center(child: ConfirmPasswordField(controller: _confirmPasswordController)), // <- Updated here
-                const SizedBox(height: 20),
-                Center(
-                  child: RoleDropdown(
-                    selectedRole: _selectedRole,
-                    onRoleChanged: (String role) {
-                      setState(() {
-                        _selectedRole = role;
-                      });
-                    },
-                  ),
-                ),
                 const SizedBox(height: 50),
                 Center(
                   child: ElevatedButton(

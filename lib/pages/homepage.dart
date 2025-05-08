@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:heartcloud/utils/bottom_navbar.dart';
 
 
@@ -79,60 +80,11 @@ class _HomepageState extends State<Homepage> {
                 )
               ],
             ),
-            SizedBox(
-              height: 75,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: const [
-                  PatientCard(
-                    name: "John Dela Cruz",
-                    time: "10:30AM",
-                    date: "Mar. 25, 2025",
-                    isHighlighted: true,
-                  )
-                ],
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 40),
+              child: Column(
               ),
-            ),
-            SizedBox(
-              height: 75,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: const [
-                  PatientCard(
-                    name: "Mary Grace Piattos",
-                    time: "1:30PMAM",
-                    date: "Feb. 25, 2025",
-                  )
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 75,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: const [
-                  PatientCard(
-                    name: "John Dela Cruz",
-                    time: "10:30AM",
-                    date: "Mar. 25, 2025",
-                    isHighlighted: true,
-                  )
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 75,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: const [
-                  PatientCard(
-                    name: "Mary Grace Piattos",
-                    time: "1:30PMAM",
-                    date: "Feb. 25, 2025",
-                  )
-                ],
-              ),
-            ),
+            )
           ],
         ),
       ),

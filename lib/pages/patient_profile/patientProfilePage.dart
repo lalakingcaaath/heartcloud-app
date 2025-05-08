@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/utils/bottom_navbar.dart';
-import 'package:heartcloud/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PatientProfile extends StatefulWidget {
-  const PatientProfile({super.key});
+  final DocumentSnapshot patientData;
+
+  const PatientProfile({super.key, required this.patientData});
 
   @override
   State<PatientProfile> createState() => _PatientProfileState();
@@ -18,8 +20,12 @@ class _PatientProfileState extends State<PatientProfile> {
       _selectedIndex = index;
     });
   }
+
   @override
   Widget build(BuildContext context) {
+    // Access the patient data passed to the widget
+    var patient = widget.patientData;
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Container(
@@ -28,61 +34,45 @@ class _PatientProfileState extends State<PatientProfile> {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 70),
+              const SizedBox(height: 70),
               Text(
-                "Patient Details", style: TextStyle(
-                color: darkBlue,
-                fontWeight: FontWeight.bold,
-                fontSize: 25
+                "Patient Details",
+                style: TextStyle(
+                    color: darkBlue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 25),
               ),
-              ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
+              const Text("FIRST NAME"),
+              const SizedBox(height: 20),
+              Text(patient['firstName'] ?? "No first name"),
+              const SizedBox(height: 20),
+              const Text("LAST NAME"),
+              const SizedBox(height: 20),
+              Text(patient['lastName'] ?? "No last name"),
+              const SizedBox(height: 20),
+              const Text("Gender"),
+              const SizedBox(height: 20),
+              Text(patient['gender'] ?? "No gender"),
+              const SizedBox(height: 20),
+              const Text("Contact Information"),
+              const SizedBox(height: 20),
+              Text(patient['contactInfo'] ?? "No contact information"),
+              const SizedBox(height: 40),
               Text(
-                "FIRST NAME"
-              ),
-              SizedBox(height: 20),
-              Text(
-                "John"
-              ),
-              SizedBox(height: 20),
-              Text(
-                "LAST NAME"
-              ),
-              SizedBox(height: 20),
-              Text(
-                "Dela Cruz"
-              ),
-              SizedBox(height: 20),
-              Text(
-                  "Gender"
-              ),
-              SizedBox(height: 20),
-              Text(
-                  "Male"
-              ),
-              SizedBox(height: 20),
-              Text(
-                  "Contact Information"
-              ),
-              SizedBox(height: 20),
-              Text(
-                  "+63 927 1140 157"
-              ),
-              SizedBox(height: 40),
-              Text(
-                "Recording History", style: TextStyle(
-                color: darkBlue,
-                fontWeight: FontWeight.bold,
-                fontSize: 25
-              ),
+                "Recording History",
+                style: TextStyle(
+                    color: darkBlue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 25),
               ),
             ],
           ),
         ),
       ),
       bottomNavigationBar: BottomNavBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

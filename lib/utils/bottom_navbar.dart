@@ -3,6 +3,7 @@ import 'package:heartcloud/pages/homepage.dart';
 import 'package:heartcloud/pages/logs/stethologs.dart';
 import 'package:heartcloud/pages/patient.dart';
 import 'package:heartcloud/pages/record.dart';
+import 'package:heartcloud/pages/auscultation.dart';
 import 'package:heartcloud/pages/settings.dart';
 import 'package:heartcloud/utils/colors.dart';
 
@@ -66,7 +67,7 @@ void _navigateToPage(BuildContext context, int index) {
       page = const PatientList();
       break;
     case 2:
-      page = const RecordPage();
+      page = const RecordAuscultation();
       break;
     case 3:
       page = const StethoLogs();

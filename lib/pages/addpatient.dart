@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:heartcloud/widgets.dart';
 import 'package:heartcloud/utils/colors.dart';
@@ -15,9 +14,9 @@ class Addpatient extends StatefulWidget {
 class _AddpatientState extends State<Addpatient> {
   final TextEditingController _firstName = TextEditingController();
   final TextEditingController _lastName = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _contactInfo = TextEditingController();
-  final _ageController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  String? _selectedGender;
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -27,11 +26,11 @@ class _AddpatientState extends State<Addpatient> {
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _firstName.dispose();
     _lastName.dispose();
-    _emailController.dispose();
     _contactInfo.dispose();
+    _ageController.dispose();
     super.dispose();
   }
 
@@ -45,103 +44,145 @@ class _AddpatientState extends State<Addpatient> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(height: 70),
+              const SizedBox(height: 70),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Patient Profile Data Entry", style: TextStyle(
-                    color: darkBlue,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold
+                    "Patient Profile Data Entry",
+                    style: TextStyle(
+                      color: darkBlue,
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  )
                 ],
               ),
-              SizedBox(height: 50),
+              const SizedBox(height: 50),
               Center(child: FirstName(controller: _firstName)),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Center(child: LastName(controller: _lastName)),
-              SizedBox(height: 20),
-              Center(child: GenderDropdown()),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
+
+              // Gender Dropdown
+              Center(
+                child: DropdownButtonFormField<String>(
+                  value: _selectedGender,
+                  hint: const Text("Select Gender"),
+                  items: ["Male", "Female"].map((String gender) {
+                    return DropdownMenuItem<String>(
+                      value: gender,
+                      child: Text(gender),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedGender = newValue;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: "Gender",
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
               Center(child: AgeField(controller: _ageController)),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Center(child: ContactInformation(controller: _contactInfo)),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
+
+              // Add Patient Button
               Row(
                 children: [
                   Expanded(
-                      child: GestureDetector(
-                        onTap: () async {
-                          try {
-                            final String firstName = _firstName.text.trim();
-                            final String lastName = _lastName.text.trim();
-                            final String contactInfo = _contactInfo.text.trim();
-                            final String ageText = _ageController.text.trim();
-                            final int? age = int.tryParse(ageText);
+                    child: GestureDetector(
+                      onTap: () async {
+                        try {
+                          final String firstName = _firstName.text.trim();
+                          final String lastName = _lastName.text.trim();
+                          final String contactInfo = _contactInfo.text.trim();
+                          final String ageText = _ageController.text.trim();
+                          final int? age = int.tryParse(ageText);
 
-                            // Optionally, validate fields
-                            if (firstName.isEmpty || lastName.isEmpty || contactInfo.isEmpty || age == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("Please fill out all fields correctly."))
-                              );
-                              return;
-                            }
-
-                            // Store to Firestore
-                            await FirebaseFirestore.instance.collection('patient').add({
-                              'firstName': firstName,
-                              'lastName': lastName,
-                              'contactInfo': contactInfo,
-                              'age': age,
-                              'createdAt': FieldValue.serverTimestamp(),
-                            });
-
+                          // Field validation
+                          if (firstName.isEmpty ||
+                              lastName.isEmpty ||
+                              contactInfo.isEmpty ||
+                              age == null ||
+                              _selectedGender == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Patient added successfully!"))
+                              const SnackBar(
+                                content: Text("Please fill out all fields correctly."),
+                              ),
                             );
-
-                            // Optionally clear fields
-                            _firstName.clear();
-                            _lastName.clear();
-                            _contactInfo.clear();
-                            _ageController.clear();
-
-                          } catch (e) {
-                            print("Error adding patient: $e");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Failed to add patient."))
-                            );
+                            return;
                           }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: darkBlue,
-                              borderRadius: BorderRadius.circular(10)
-                          ),
-                          child: Center(
-                            child: Text(
-                              "Add patient", style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18
+
+                          // Store data to Firestore
+                          await FirebaseFirestore.instance.collection('patient').add({
+                            'firstName': firstName,
+                            'lastName': lastName,
+                            'contactInfo': contactInfo,
+                            'age': age,
+                            'gender': _selectedGender, // Add gender to database
+                            'createdAt': FieldValue.serverTimestamp(),
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Patient added successfully!"),
                             ),
+                          );
+
+                          // Clear fields after submission
+                          _firstName.clear();
+                          _lastName.clear();
+                          _contactInfo.clear();
+                          _ageController.clear();
+                          setState(() {
+                            _selectedGender = null;
+                          });
+                        } catch (e) {
+                          print("Error adding patient: $e");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Failed to add patient."),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: darkBlue,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "Add Patient",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
                             ),
                           ),
                         ),
-                      )
+                      ),
+                    ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
       ),
+
+      // Bottom Navigation Bar
       bottomNavigationBar: BottomNavBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }

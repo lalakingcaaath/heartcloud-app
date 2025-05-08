@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:heartcloud/pages/patient_profile/patientProfilePage.dart';
 import 'package:heartcloud/utils/colors.dart';
+import 'package:waveform_flutter/waveform_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 
 class FirstName extends StatelessWidget {
@@ -430,16 +432,16 @@ class _StatusCardState extends State<StatusCard> {
 
 class PatientCard extends StatefulWidget {
   final String name;
-  final String? time;
   final String date;
-  final bool isHighlighted; // For alternating colors
+  final Color backgroundColor; // Use Color for background
+  final dynamic patientData;  // Add this line to hold patient data
 
   const PatientCard({
     super.key,
     required this.name,
-    this.time,
     required this.date,
-    this.isHighlighted = false, // Default to false
+    required this.backgroundColor, // Accept background color directly
+    required this.patientData
   });
 
   @override
@@ -450,16 +452,18 @@ class _PatientCardState extends State<PatientCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: (){
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PatientProfile()));
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PatientProfile(
+          patientData: widget.patientData,
+        )));
       },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8), // Spacing between cards
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: widget.isHighlighted ? PatientCardColor1 : PatientCardColor2, // Alternating colors
+          color: widget.backgroundColor, // Use the passed backgroundColor
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.black)
+          border: Border.all(color: Colors.black),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -473,7 +477,7 @@ class _PatientCardState extends State<PatientCard> {
               ),
             ),
             Text(
-              "${widget.time ?? ''}, ${widget.date}", // Ensures time isn't null
+              "${widget.date}", // Ensures time isn't null
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black87,
@@ -643,4 +647,25 @@ class _StethologsCardState extends State<StethologsCard> {
       ),
     );
   }
+}
+
+class WaveForm extends StatefulWidget {
+  const WaveForm({super.key});
+
+  @override
+  State<WaveForm> createState() => _WaveFormState();
+}
+
+class _WaveFormState extends State<WaveForm> {
+  final Stream<Amplitude> _amplitudeStream = createRandomAmplitudeStream();
+
+  @override
+  Widget build(BuildContext context) => AnimatedWaveList(
+      stream: _amplitudeStream,
+      barBuilder: (animation, amplitude) => WaveFormBar(
+        amplitude: amplitude,
+        animation: animation,
+        color: Colors.red,
+      )
+  );
 }
