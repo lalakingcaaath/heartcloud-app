@@ -43,6 +43,8 @@ dependencies:
   flutter_sound: ^9.28.0
   permission_handler: ^12.0.0+1
   waveform_flutter: ^1.2.0
+  path_provider: ^2.1.5
+  audioplayers: ^6.4.0
 
 dev_dependencies:
   flutter_test:

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:heartcloud/widgets.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/utils/bottom_navbar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Addpatient extends StatefulWidget {
   const Addpatient({super.key});
@@ -121,8 +122,14 @@ class _AddpatientState extends State<Addpatient> {
                             return;
                           }
 
+                          final user = FirebaseAuth.instance.currentUser;
+                          String? doctorId = user?.uid;
+
                           // Store data to Firestore
-                          await FirebaseFirestore.instance.collection('patient').add({
+                          await FirebaseFirestore.instance.collection('users')
+                          .doc(doctorId)
+                          .collection('patients')
+                              .add({
                             'firstName': firstName,
                             'lastName': lastName,
                             'contactInfo': contactInfo,

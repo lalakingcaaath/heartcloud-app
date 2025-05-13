@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:heartcloud/utils/colors.dart';
+import 'package:http/http.dart' as http show get;
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:waveform_flutter/waveform_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class RecordAuscultation extends StatefulWidget {
   const RecordAuscultation({super.key});
@@ -21,6 +25,61 @@ class _RecordAuscultationState extends State<RecordAuscultation> {
   String _timerText = '00:00:00';
   Timer? _timer;
   int _seconds = 0;
+  String statusMessage = "Idle";
+
+  Future<void> downloadAudio() async {
+    try {
+      setState(() {
+        statusMessage = "Connecting to ESP32...";
+      });
+
+      final response = await http.get(Uri.parse('http://192.168.254.121/audio.wav'));
+
+      if (response.statusCode == 200) {
+        // Save the audio file locally
+        final directory = await getExternalStorageDirectory();
+        final file = File('${directory?.path}/audio.wav');
+        await file.writeAsBytes(response.bodyBytes);
+
+        setState(() {
+          statusMessage = "Download successful! Saved at ${file.path}";
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download successful! File saved at ${file.path}')),
+        );
+
+        print("Audio downloaded, size: ${response.bodyBytes.length} bytes");
+      } else {
+        setState(() {
+          statusMessage = "Failed to download audio. Status: ${response.statusCode}";
+        });
+        print("Failed to download audio: ${response.statusCode}");
+      }
+    } catch (e) {
+      setState(() {
+        statusMessage = "Error: ${e.toString()}";
+      });
+      print("Error downloading audio: $e");
+    }
+  }
+
+  Future<void> playAudio() async {
+    try {
+      final directory = await getExternalStorageDirectory();
+      final filePath = '${directory?.path}/audio.wav';
+
+      if (await File(filePath).exists()) {
+        final player = AudioPlayer();
+        await player.play(DeviceFileSource(filePath));
+        print("Playing audio from: $filePath");
+      } else {
+        print("Audio file not found at: $filePath");
+      }
+    } catch (e) {
+      print("Error playing audio: $e");
+    }
+  }
 
   @override
   void initState() {
@@ -264,6 +323,46 @@ class _RecordAuscultationState extends State<RecordAuscultation> {
                     }).toList(),
                   );
                 },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(height: 100),
+                  GestureDetector(
+                    onTap: (){
+                      downloadAudio();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                        border: Border.all(color: Colors.black)
+                      ),
+                      child: Text("Download", style: TextStyle(
+                          color: darkBlue,
+                          fontSize: 25
+                      ),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(height: 100),
+                  GestureDetector(
+                    onTap: playAudio,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(color: Colors.black),
+                      ),
+                      child: Text("Play", style: TextStyle(color: darkBlue, fontSize: 25)),
+                    ),
+                  )
+                ],
               )
             ],
           ),

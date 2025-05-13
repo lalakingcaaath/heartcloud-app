@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/widgets.dart';
 
@@ -18,6 +19,26 @@ class _ChangePasswordState extends State<ChangePassword> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> changePassword(String email, BuildContext context) async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Password reset email sent. Please check your inbox."),
+          backgroundColor: darkBlue,
+        ),
+      );
+    } catch (e) {
+      print("Error changing password: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to send reset email. Error: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -135,11 +156,25 @@ class _ChangePasswordState extends State<ChangePassword> {
                             borderRadius: BorderRadius.circular(10)
                           ),
                           child: Center(
-                            child: Text(
-                              "Reset Password", style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18
-                            ),
+                            child: GestureDetector(
+                              onTap: () {
+                                if (_emailController.text.isNotEmpty) {
+                                  changePassword(_emailController.text.trim(), context);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Please enter your email."),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Text(
+                                "Reset Password", style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18
+                              ),
+                              ),
                             ),
                           ),
                         ),

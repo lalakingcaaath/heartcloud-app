@@ -6,6 +6,7 @@ import 'package:heartcloud/utils/bottom_navbar.dart';
 import 'package:heartcloud/widgets.dart';
 import 'addpatient.dart';
 import 'patient_profile/patientProfilePage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PatientList extends StatefulWidget {
   const PatientList({super.key});
@@ -83,7 +84,10 @@ class _PatientListState extends State<PatientList> {
 
               // StreamBuilder to fetch patient data from Firestore
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('patient').snapshots(),
+                stream: FirebaseFirestore.instance.collection('users')
+                .doc(FirebaseAuth.instance.currentUser!.uid)
+                .collection('patients')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
