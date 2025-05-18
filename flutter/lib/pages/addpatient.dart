@@ -19,6 +19,7 @@ class _AddpatientState extends State<Addpatient> {
   final TextEditingController _ageController = TextEditingController();
   String? _selectedGender;
   int _selectedIndex = 0;
+  String lol = "lol";
 
   void _onItemTapped(int index) {
     setState(() {
