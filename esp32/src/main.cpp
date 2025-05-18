@@ -84,8 +84,12 @@ void setup(){
 
   ssl_client.setInsecure();
 
+  app.setTime(get_ntp_time());
+
+
   Serial.println("Initializing app...");
-  initializeApp(aClient, app, getAuth(sa_auth), 13000);
+  initializeApp(aClient, app, getAuth(sa_auth), auth_debug_print, "🔐 authTask");
+
 
   app.getApp<CloudStorage>(cstorage);
 
