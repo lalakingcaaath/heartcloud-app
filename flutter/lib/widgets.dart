@@ -421,7 +421,7 @@ class _StatusCardState extends State<StatusCard> {
           ),
           Text(
             widget.value, style: TextStyle(
-            color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold
+            color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold
           ),
           )
         ],
