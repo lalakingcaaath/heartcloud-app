@@ -272,10 +272,6 @@ class _RecordAuscultationState extends State<RecordAuscultation> {
                         onPressed: _isRecording ? null : _startRecording,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.pause, size: 40),
-                        onPressed: _isRecording ? _stopRecording : null,
-                      ),
-                      IconButton(
                         icon: const Icon(Icons.stop, size: 40),
                         onPressed: _isRecording ? _stopRecording : null,
                       ),
