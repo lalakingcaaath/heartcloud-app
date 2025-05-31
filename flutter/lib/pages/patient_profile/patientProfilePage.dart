@@ -1,7 +1,12 @@
+import 'dart:async'; // <<<--- ADDED THIS IMPORT
 import 'package:flutter/material.dart';
+// Assuming your colors.dart and bottom_navbar.dart are in lib/utils/
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/utils/bottom_navbar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // For current user (doctor ID)
+import 'package:intl/intl.dart'; // For date formatting
+import 'package:audioplayers/audioplayers.dart'; // For audio playback
 
 class PatientProfile extends StatefulWidget {
   final DocumentSnapshot patientData;
@@ -13,66 +18,323 @@ class PatientProfile extends StatefulWidget {
 }
 
 class _PatientProfileState extends State<PatientProfile> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // For BottomNavBar
+
+  // Audio Player State
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  String? _currentlyPlayingUrl;
+  PlayerState _playerState = PlayerState.stopped;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
+  StreamSubscription? _durationSubscription;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _playerCompleteSubscription;
+  StreamSubscription? _playerStateChangeSubscription;
+
+  String? get _currentDoctorId {
+    return FirebaseAuth.instance.currentUser?.uid;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to player state changes
+    _playerStateChangeSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _playerState = state;
+        });
+      }
+    });
+
+    _durationSubscription = _audioPlayer.onDurationChanged.listen((newDuration) {
+      if (mounted) {
+        setState(() {
+          _duration = newDuration;
+        });
+      }
+    });
+
+    _positionSubscription = _audioPlayer.onPositionChanged.listen((newPosition) {
+      if (mounted) {
+        setState(() {
+          _position = newPosition;
+        });
+      }
+    });
+
+    _playerCompleteSubscription = _audioPlayer.onPlayerComplete.listen((event) {
+      if (mounted) {
+        setState(() {
+          _playerState = PlayerState.completed;
+          _position = Duration.zero; // Reset position or to _duration if you prefer
+          _currentlyPlayingUrl = null; // Clear the currently playing URL
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Release all subscriptions and player
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _playerCompleteSubscription?.cancel();
+    _playerStateChangeSubscription?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    // Handle navigation for bottom nav bar if needed
+  }
+
+  Future<void> _playPauseAudio(String url) async {
+    if (_currentlyPlayingUrl == url && _playerState == PlayerState.playing) {
+      await _audioPlayer.pause();
+    } else if (_currentlyPlayingUrl == url && _playerState == PlayerState.paused) {
+      await _audioPlayer.resume();
+    } else {
+      // Stop any currently playing audio before starting a new one
+      await _audioPlayer.stop();
+      if (mounted) { // Check mounted before setState
+        setState(() { // Reset position and duration for the new track
+          _position = Duration.zero;
+          _duration = Duration.zero;
+        });
+      }
+      await _audioPlayer.play(UrlSource(url));
+      if (mounted) {
+        setState(() {
+          _currentlyPlayingUrl = url;
+        });
+      }
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$minutes:$seconds";
+  }
+
+  Widget _buildAudioPlayerControls(QueryDocumentSnapshot recordingDoc) {
+    String audioUrl = recordingDoc['downloadUrl'] as String;
+    bool isCurrentlyPlayingThis = _currentlyPlayingUrl == audioUrl;
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Type: ${recordingDoc['auscultationType'] ?? 'N/A'}",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Recorded: ${recordingDoc['recordedAt'] != null ? DateFormat('MMM d, yyyy - hh:mm a').format((recordingDoc['recordedAt'] as Timestamp).toDate()) : 'N/A'}",
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            ),
+            Text(
+              "Filename: ${recordingDoc['originalEsp32FileName'] ?? recordingDoc['fileNameInStorage'] ?? 'N/A'}",
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (recordingDoc['durationSeconds'] != null)
+              Text(
+                "ESP32 Duration: ${recordingDoc['durationSeconds']}s",
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    isCurrentlyPlayingThis && _playerState == PlayerState.playing
+                        ? Icons.pause_circle_filled
+                        : Icons.play_circle_filled,
+                    size: 40,
+                    color: darkBlue,
+                  ),
+                  onPressed: () => _playPauseAudio(audioUrl),
+                ),
+              ],
+            ),
+            if (isCurrentlyPlayingThis) // Show slider and time only for the active player
+              Column(
+                children: [
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: darkBlue,
+                      inactiveTrackColor: darkBlue.withOpacity(0.3),
+                      trackHeight: 2.0,
+                      thumbColor: darkBlue,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0),
+                      overlayColor: darkBlue.withAlpha(0x29),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+                    ),
+                    child: Slider(
+                      min: 0,
+                      max: _duration.inSeconds.toDouble() > 0 ? _duration.inSeconds.toDouble() : 1.0, // Ensure max is not 0
+                      value: _position.inSeconds.toDouble().clamp(0.0, _duration.inSeconds.toDouble()), // Clamp value
+                      onChanged: (value) async {
+                        final newPosition = Duration(seconds: value.toInt());
+                        await _audioPlayer.seek(newPosition);
+                        // Optionally resume playback if it was paused during seek
+                        if (_playerState == PlayerState.paused || _playerState == PlayerState.completed) {
+                          await _audioPlayer.resume();
+                        }
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_formatDuration(_position)),
+                        Text(_formatDuration(_duration)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Access the patient data passed to the widget
     var patient = widget.patientData;
+    String patientId = widget.patientData.id;
+    String? doctorId = _currentDoctorId;
 
     return Scaffold(
+      appBar: AppBar( // Added AppBar for consistency and title
+        title: Text("${patient['firstName'] ?? ""} ${patient['lastName'] ?? ""}'s Profile"),
+        backgroundColor: darkBlue,
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         child: Container(
-          margin: const EdgeInsets.only(left: 40, right: 40),
+          margin: const EdgeInsets.all(20), // Consistent margin
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 70),
+              // const SizedBox(height: 20), // Adjusted from 70 since AppBar is present
               Text(
                 "Patient Details",
                 style: TextStyle(
                     color: darkBlue,
                     fontWeight: FontWeight.bold,
-                    fontSize: 25),
+                    fontSize: 22), // Adjusted size
               ),
-              const SizedBox(height: 40),
-              const Text("FIRST NAME"),
               const SizedBox(height: 20),
-              Text(patient['firstName'] ?? "No first name"),
-              const SizedBox(height: 20),
-              const Text("LAST NAME"),
-              const SizedBox(height: 20),
-              Text(patient['lastName'] ?? "No last name"),
-              const SizedBox(height: 20),
-              const Text("Gender"),
-              const SizedBox(height: 20),
-              Text(patient['gender'] ?? "No gender"),
-              const SizedBox(height: 20),
-              const Text("Contact Information"),
-              const SizedBox(height: 20),
-              Text(patient['contactInfo'] ?? "No contact information"),
-              const SizedBox(height: 40),
+              Card( // Wrap details in a Card for better UI
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailRow("FIRST NAME:", patient['firstName'] ?? "N/A"),
+                      _buildDetailRow("LAST NAME:", patient['lastName'] ?? "N/A"),
+                      _buildDetailRow("GENDER:", patient['gender'] ?? "N/A"),
+                      _buildDetailRow("CONTACT INFO:", patient['contactInfo'] ?? "N/A"),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
               Text(
                 "Recording History",
                 style: TextStyle(
                     color: darkBlue,
                     fontWeight: FontWeight.bold,
-                    fontSize: 25),
+                    fontSize: 22),
               ),
+              const SizedBox(height: 10),
+              if (doctorId == null)
+                const Center(child: Text("Error: Could not identify doctor." ))
+              else
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(doctorId)
+                      .collection('patients')
+                      .doc(patientId)
+                      .collection('auscultation_recordings')
+                      .orderBy('recordedAt', descending: true) // Latest first
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      print("Error fetching recordings: ${snapshot.error}");
+                      return Center(child: Text("Error loading recordings: ${snapshot.error}"));
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text("No recordings found for this patient.", style: TextStyle(fontSize: 16)),
+                      ));
+                    }
+
+                    var recordings = snapshot.data!.docs;
+                    return ListView.builder(
+                      shrinkWrap: true, // Important for ListView inside SingleChildScrollView
+                      physics: const NeverScrollableScrollPhysics(), // Disable ListView's own scrolling
+                      itemCount: recordings.length,
+                      itemBuilder: (context, index) {
+                        var recordingDoc = recordings[index];
+                        return _buildAudioPlayerControls(recordingDoc);
+                      },
+                    );
+                  },
+                ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavBar(
+      bottomNavigationBar: BottomNavBar( // Assuming BottomNavBar is correctly implemented
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ],
       ),
     );
   }

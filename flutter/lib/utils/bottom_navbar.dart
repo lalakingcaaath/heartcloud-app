@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:heartcloud/pages/homepage.dart';
 import 'package:heartcloud/pages/logs/stethologs.dart';
 import 'package:heartcloud/pages/patient.dart';
-import 'package:heartcloud/pages/record.dart';
 import 'package:heartcloud/pages/auscultation.dart';
 import 'package:heartcloud/pages/settings.dart';
 import 'package:heartcloud/utils/colors.dart';

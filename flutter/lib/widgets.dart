@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:heartcloud/pages/patient_profile/patientProfilePage.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:waveform_flutter/waveform_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 
@@ -579,72 +580,125 @@ class _PatientButtonState extends State<PatientButton> {
           ],
         ),
       ),
-    );;
+    );
   }
 }
 
-class StethologsCard extends StatefulWidget {
-  const StethologsCard({super.key});
+class StethologsCard extends StatelessWidget {
+  final QueryDocumentSnapshot recordingData;
 
-  @override
-  State<StethologsCard> createState() => _StethologsCardState();
-}
+  const StethologsCard({super.key, required this.recordingData});
 
-class _StethologsCardState extends State<StethologsCard> {
+  Future<void> _navigateToPatientProfile(BuildContext context, String doctorId, String patientId) async {
+    try {
+      DocumentSnapshot patientDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(doctorId)
+          .collection('patients')
+          .doc(patientId)
+          .get();
+
+      if (patientDoc.exists) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PatientProfile(patientData: patientDoc),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Patient profile not found.'), duration: Duration(seconds: 2))
+        );
+        print("Patient document not found for patientId: $patientId under doctorId: $doctorId");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading patient profile: ${e.toString().split('\n').first}'))
+      );
+      print("Error fetching patient document for profile: $e");
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black),
-        borderRadius: BorderRadius.circular(15),
-        color: PatientCardColor2,
+    // Extract data safely with fallbacks
+    String patientFirstName = recordingData.get('patientFirstName') ?? 'N/A';
+    String patientLastName = recordingData.get('patientLastName') ?? 'N/A';
+    String patientFullName = (patientFirstName == 'N/A' && patientLastName == 'N/A') ? 'Unknown Patient' : '$patientFirstName $patientLastName'.trim();
+
+    Timestamp? recordedAtTimestamp = recordingData.get('recordedAt') as Timestamp?;
+    String recordedDate = recordedAtTimestamp != null
+        ? DateFormat('MMM d, yyyy - hh:mm a').format(recordedAtTimestamp.toDate())
+        : 'Date N/A';
+
+    String checkupType = recordingData.get('auscultationType') ?? 'Type N/A';
+    String doctorId = recordingData.get('doctorId') ?? ''; // Needed for patient profile navigation
+    String patientId = recordingData.get('patientId') ?? ''; // Needed for patient profile navigation
+
+
+    return InkWell( // Make the card tappable
+      onTap: () {
+        if (doctorId.isNotEmpty && patientId.isNotEmpty) {
+          _navigateToPatientProfile(context, doctorId, patientId);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Patient information missing for navigation.'), duration: Duration(seconds: 2))
+          );
+          print("Error: doctorId or patientId is missing in recording document.");
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(15), // Increased padding
+        margin: const EdgeInsets.only(bottom: 15), // Added margin between cards
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300), // Softer border
+          borderRadius: BorderRadius.circular(12), // Softer radius
+          color: PatientCardColor2, // Ensure this color is defined in your colors.dart
+          boxShadow: [ // Optional: Add a subtle shadow
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Align text to start
+          children: [
+            Text(
+              patientFullName,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 17,
+                color: darkBlue, // Assuming darkBlue is defined
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow(Icons.calendar_today_outlined, "Recorded: $recordedDate"),
+            const SizedBox(height: 6),
+            _buildInfoRow(Icons.medical_services_outlined, "Type: $checkupType"),
+            const SizedBox(height: 6),
+            _buildInfoRow(Icons.check_circle_outline, "Status: Recorded", color: Colors.green.shade700),
+          ],
+        ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "John Dela Cruz"
-              )
-            ],
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, {Color? color}) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color ?? Colors.grey.shade700),
+        const SizedBox(width: 8),
+        Expanded( // Allow text to wrap if too long
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 14, color: color ?? Colors.black87),
           ),
-          SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  "Last Visited: Mar 18, 2025"
-              )
-            ],
-          ),
-          SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  "Checkup Type: Heart Exam"
-              )
-            ],
-          ),
-          SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                  "Status: Recorded"
-              )
-            ],
-          )
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
