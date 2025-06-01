@@ -56,8 +56,9 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  image_path: "images/hclogo.png"
+  image_path: "images/hclogo-nobg.png"
   min_sdk_android: 21
+  adaptive_icon_background: #ffffff
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
