@@ -138,7 +138,7 @@ class _RecordAuscultationState extends State<RecordAuscultation> {
   bool _isRecording = false;
   bool _isLoadingCommand = false;
   bool _isProcessingAudio = false;
-  String _esp32IpAddress = '192.168.1.21';
+  String _esp32IpAddress = '192.168.1.208';
   int _currentRecordingDuration = 0;
   double? _uploadProgress;
 

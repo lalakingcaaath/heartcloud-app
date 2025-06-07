@@ -4,6 +4,7 @@ import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/widgets.dart';
 import 'register.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:heartcloud/pages/settings/password/changePassword.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -95,7 +96,9 @@ class _LoginPageState extends State<LoginPage> {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 10),
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePassword()));
+                        },
                         child: Text(
                           "Forgot Password?",
                           style: TextStyle(color: headerColor2),

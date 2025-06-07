@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:heartcloud/pages/login.dart';
 import 'package:heartcloud/utils/colors.dart';
@@ -17,7 +18,9 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _lastName = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+  TextEditingController();
+  bool _agreeToTerms = false;
 
   @override
   void dispose() {
@@ -30,6 +33,14 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _registerUser() async {
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Please agree to the terms and conditions.")),
+      );
+      return;
+    }
+
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
     String confirmPassword = _confirmPasswordController.text.trim();
@@ -71,8 +82,104 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+  void _showPolicyDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Text(content),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Combined policies text
+    const String combinedPolicies = '''
+Terms & Conditions
+
+Please read these Terms and Conditions ("Terms") carefully before using the HeartCloud mobile application (the "Service") operated by us.
+
+1. Agreement to Terms
+By creating an account and using our Service, you agree to be bound by these Terms. If you do not agree to these Terms, do not use the Service.
+
+2. User Accounts
+- Account Creation: To use our Service, you must register for an account. You agree to provide information that is accurate, complete, and current at all times.
+- Account Responsibility: You are responsible for safeguarding the password that you use to access the Service and for any activities or actions under your password.
+- Account Security: You agree not to disclose your password to any third party. You must notify us immediately upon becoming aware of any breach of security or unauthorized use of your account.
+
+3. Acceptable Use
+You agree not to use the Service for any purpose that is illegal or prohibited by these Terms.
+
+4. Intellectual Property
+The Service and its original content, features, and functionality are and will remain the exclusive property of HeartCloud and its licensors.
+
+5. Termination
+We may terminate or suspend your account and bar access to the Service immediately, without prior notice or liability, for any reason whatsoever, including without limitation if you breach the Terms.
+
+6. Disclaimer of Warranties
+The Service is provided on an "AS IS" and "AS AVAILABLE" basis. Your use of the Service is at your sole risk.
+
+7. Limitation of Liability
+In no event shall HeartCloud, nor its directors, employees, or partners, be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of the Service.
+
+8. Governing Law
+These Terms shall be governed and construed in accordance with the laws of the Republic of the Philippines.
+
+9. Changes to Terms
+We reserve the right to modify or replace these Terms at any time.
+
+10. Contact Us
+If you have any questions about these Terms, please contact us at: support@heartcloud.app
+
+
+------------------------------------
+
+
+Confidentiality Policy
+
+
+Welcome to HeartCloud. We are committed to protecting your privacy and handling your personal data in an open and transparent manner.
+
+1. Information We Collect
+- Account Information: Your first name, last name, and email address.
+- User Content: Any data you voluntarily create within the application.
+- Usage Data: Information about how you interact with our service.
+
+2. How We Use Your Information
+- To Provide and Maintain Our Service.
+- To Improve Our Service.
+- To Communicate With You.
+- For Security and Safety.
+
+3. How We Share and Disclose Information
+We do not sell your personal data. We only share information with third-party service providers like Google Firebase for backend infrastructure, or for legal reasons if required by law.
+
+4. Data Security
+We implement strong security measures to protect your information, including encryption. However, no system is 100% secure.
+
+5. Data Retention
+We retain your personal information as long as your account is active. You can delete your account at any time.
+
+6. Children's Privacy
+Our service is not directed to individuals under the age of 13.
+
+7. Changes to This Policy
+We may update this Confidentiality Policy from time to time. We will notify you of any changes by posting the new policy within our application.
+
+8. Contact Us
+If you have any questions about this Confidentiality Policy, please contact us at: support@heartcloud.app
+''';
     return Container(
       decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -106,19 +213,57 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 20),
                 Center(child: LastName(controller: _lastName)),
                 const SizedBox(height: 20),
-                Center(child: EmailField(controller: _emailController)), // <- Updated here
+                Center(child: EmailField(controller: _emailController)),
                 const SizedBox(height: 20),
-                Center(child: PasswordField(controller: _passwordController)), // <- Updated here
+                Center(child: PasswordField(controller: _passwordController)),
                 const SizedBox(height: 20),
-                Center(child: ConfirmPasswordField(controller: _confirmPasswordController)), // <- Updated here
-                const SizedBox(height: 50),
+                Center(
+                    child: ConfirmPasswordField(
+                        controller: _confirmPasswordController)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _agreeToTerms,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          _agreeToTerms = value!;
+                        });
+                      },
+                      checkColor: lightBlue,
+                      activeColor: darkBlue,
+                    ),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          text: 'I agree to the ',
+                          style: TextStyle(color: headerColor1, fontSize: 12),
+                          children: <TextSpan>[
+                            TextSpan(
+                                text: 'Terms, Conditions, and Policy',
+                                style: TextStyle(
+                                    color: headerColor2,
+                                    decoration: TextDecoration.underline),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    _showPolicyDialog(
+                                        "HeartCloud Policies", combinedPolicies);
+                                  }),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
                 Center(
                   child: ElevatedButton(
                     onPressed: _registerUser,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: darkBlue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 120, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 120, vertical: 15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
