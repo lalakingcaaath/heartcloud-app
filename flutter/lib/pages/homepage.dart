@@ -69,7 +69,7 @@ class _HomepageState extends State<Homepage> {
     }
 
     try {
-      final response = await http.get(Uri.parse('http://192.168.1.208/battery'))
+      final response = await http.get(Uri.parse('http://192.168.1.112/battery'))
           .timeout(const Duration(seconds: 5));
       if (!mounted) return;
       if (response.statusCode == 200) {

@@ -1,11 +1,14 @@
-import 'dart:io'; // Needed for File
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/utils/bottom_navbar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // needed to get current user
-import 'package:image_picker/image_picker.dart'; // For picking images
-import 'package:firebase_storage/firebase_storage.dart'; // For uploading to Firebase Storage
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
+// No need to import LoginPage here when using named routes
+// import 'package:heartcloud/login.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -16,27 +19,22 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   int _selectedIndex = 0;
-  File? _imageFile; // To store the picked image file
-  String? _profileImageUrl; // To store the profile image URL from Firestore
-  bool _isUploading = false; // To show a loading indicator during upload
+  File? _imageFile;
+  String? _profileImageUrl;
+  bool _isUploading = false;
 
-  final ImagePicker _picker = ImagePicker(); // Instance of ImagePicker
+  final ImagePicker _picker = ImagePicker();
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      // Handle navigation based on index if needed
-      // For example:
-      // if (index == 0) Navigator.pushReplacementNamed(context, '/home');
-      // if (index == 1) Navigator.pushReplacementNamed(context, '/search');
-      // etc.
     });
   }
 
   @override
   void initState() {
     super.initState();
-    _loadUserProfile(); // Load user profile data, including image URL
+    _loadUserProfile();
   }
 
   Future<void> _loadUserProfile() async {
@@ -63,7 +61,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return null;
   }
 
-  // 🔹 Function to pick an image from gallery or camera
   Future<void> _pickImage(ImageSource source) async {
     try {
       final pickedFile = await _picker.pickImage(source: source, imageQuality: 80);
@@ -72,7 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           _imageFile = File(pickedFile.path);
         });
-        await _uploadProfilePicture(); // Upload after picking
+        await _uploadProfilePicture();
       }
     } catch (e) {
       if (mounted) {
@@ -83,7 +80,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // 🔹 Function to upload the profile picture to Firebase Storage
   Future<void> _uploadProfilePicture() async {
     if (_imageFile == null) return;
 
@@ -95,26 +91,21 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      // Create a reference to the Firebase Storage path
       final String fileName = 'profile_pictures/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.png';
       final Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
 
-      // Upload the file
       final UploadTask uploadTask = storageRef.putFile(_imageFile!);
-
-      // Get the download URL
       final TaskSnapshot snapshot = await uploadTask.whenComplete(() => {});
       final String downloadUrl = await snapshot.ref.getDownloadURL();
 
-      // Update the user's profileImageUrl in Firestore
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'profileImageUrl': downloadUrl,
       });
 
       if (mounted) {
         setState(() {
-          _profileImageUrl = downloadUrl; // Update the local state for immediate UI update
-          _imageFile = null; // Clear the picked image
+          _profileImageUrl = downloadUrl;
+          _imageFile = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile picture updated successfully!')),
@@ -165,17 +156,34 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _signOut() async {
+    final navigator = Navigator.of(context);
+    try {
+      await FirebaseAuth.instance.signOut();
+
+      // <<< MODIFIED: Using pushNamedAndRemoveUntil with the '/login' route name >>>
+      // This is the correct way to use this method.
+      navigator.pushNamedAndRemoveUntil('/login', (route) => false);
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to sign out: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    // Determine the image to display
     ImageProvider<Object> displayImage;
     if (_imageFile != null) {
-      displayImage = FileImage(_imageFile!); // Show picked image if available
+      displayImage = FileImage(_imageFile!);
     } else if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
-      displayImage = NetworkImage(_profileImageUrl!); // Show network image from Firestore
+      displayImage = NetworkImage(_profileImageUrl!);
     } else {
-      displayImage = const NetworkImage( // Default placeholder
+      displayImage = const NetworkImage(
         'https://media.istockphoto.com/id/1316947194/vector/messenger-profile-icon-on-white-isolated-background-vector-illustration.jpg?s=612x612&w=0&k=20&c=1iQ926GXQTJkopoZAdYXgU17NCDJIRUzx6bhzgLm9ps=',
       );
     }
@@ -207,26 +215,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Stack(
-                    alignment: Alignment.center, // Better alignment for the loader
+                    alignment: Alignment.center,
                     children: [
                       CircleAvatar(
                         radius: 70,
                         backgroundImage: displayImage,
-                        backgroundColor: Colors.grey[200], // Placeholder bg
+                        backgroundColor: Colors.grey[200],
                         child: _isUploading ? const CircularProgressIndicator() : null,
                       ),
-                      if (!_isUploading) // Only show button if not uploading
+                      if (!_isUploading)
                         Positioned(
                           bottom: -10,
-                          left: 80, // Adjusted for better positioning
-                          child: Container( // Optional: Add a background to the icon button for better visibility
+                          left: 80,
+                          child: Container(
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.7),
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(
                               onPressed: () {
-                                _showImageSourceActionSheet(context); // Show options to pick image
+                                _showImageSourceActionSheet(context);
                               },
                               icon: Icon(Icons.add_a_photo, color: darkBlue, size: 28),
                             ),
@@ -238,9 +246,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 20),
               FutureBuilder<Map<String, dynamic>?>(
-                future: _getUserData(), // This will re-fetch, you might want to use the loaded _profileImageUrl if only name changes
+                future: _getUserData(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting && _profileImageUrl == null) { // Show loader only if initial data isn't loaded
+                  if (snapshot.connectionState == ConnectionState.waiting && _profileImageUrl == null) {
                     return const CircularProgressIndicator();
                   } else if (snapshot.hasError) {
                     return const Text("Error loading name");
@@ -296,24 +304,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   final patients = snapshot.data!.docs;
 
                   return Column(
-                    children: patients.asMap().entries.map((entry) {
-                      // int index = entry.key; // Not used in your current patient display
-                      var patient = entry.value;
-                      var patientData = patient.data() as Map<String, dynamic>?; // Cast data
-
-                      // Alternate background color for cards
-                      // Color cardColor = index.isEven
-                      //     ? PatientCardColor1
-                      //     : PatientCardColor2;
-
-                      return Padding( // Added padding for better spacing
+                    children: patients.map((patient) {
+                      var patientData = patient.data() as Map<String, dynamic>?;
+                      return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Text(
                               "${patientData?['firstName'] ?? 'N/A'} ${patientData?['lastName'] ?? 'N/A'}",
-                              style: TextStyle(color: darkBlue, fontSize: 16), // Added style
+                              style: TextStyle(color: darkBlue, fontSize: 16),
                             ),
                           ],
                         ),
@@ -322,7 +322,25 @@ class _ProfilePageState extends State<ProfilePage> {
                   );
                 },
               ),
-              const SizedBox(height: 30), // Added for some bottom spacing
+              const SizedBox(height: 50),
+              ElevatedButton.icon(
+                onPressed: _signOut,
+                icon: const Icon(Icons.logout, color: Colors.white),
+                label: const Text(
+                  'Log Out',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: darkBlue,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+              ),
+              const SizedBox(height: 30),
             ],
           ),
         ),

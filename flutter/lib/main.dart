@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:heartcloud/firebase_options.dart';
+import 'package:heartcloud/pages/login.dart';
 import 'package:heartcloud/pages/splash.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -24,6 +25,10 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: SplashScreen(),
+      initialRoute: '/',
+      routes: {
+        '/login': (context) => const LoginPage(),
+      },
     );
   }
 }
