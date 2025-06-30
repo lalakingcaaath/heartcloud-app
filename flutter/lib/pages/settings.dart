@@ -16,227 +16,209 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Container(
-          margin: const EdgeInsets.only(left: 40, right: 40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: 70),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                      onTap: (){
-                        Navigator.pop(context);
-                      },
-                      child: Icon(Icons.arrow_back, size: 35)
-                  ),
-                  SizedBox(width: 20),
-                  Text(
-                    "Settings", style: TextStyle(
+    // The Scaffold has been removed. This widget now only returns the content.
+    // The MainScreen provides the Scaffold, AppBar (if any), and BottomNavBar.
+    return SingleChildScrollView(
+      child: Container(
+        margin: const EdgeInsets.only(left: 40, right: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start, // Changed to start
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 70),
+            // This Row no longer needs a back button. It just displays the title.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Settings", style: TextStyle(
                     color: darkBlue,
                     fontSize: 25,
                     fontWeight: FontWeight.bold
-                  ),
-                  )
-                ],
-              ),
-              SizedBox(height: 30),
-              Row(
-                children: [
-                  const Text(
-                    "General", style: TextStyle(
+                ),
+                )
+              ],
+            ),
+            const SizedBox(height: 30),
+            const Row(
+              children: [
+                Text(
+                  "General", style: TextStyle(
                     fontSize: 20
-                  ),
-                  )
-                ],
-              ),
-              SizedBox(height: 20),
-              Row(
+                ),
+                )
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.wifi),
+                const SizedBox(width: 20),
+                const Text(
+                  "Connect to Stethoscope", style: TextStyle(
+                    fontSize: 17
+                ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: (){},
+                  child: const Icon(Icons.arrow_forward),
+                )
+              ],
+            ),
+            const SizedBox(height: 30),
+            GestureDetector(
+              onTap: () {
+                // This navigation is correct for pushing a detail screen.
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const PlacementGuide()
+                    )
+                );
+              },
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.wifi),
+                  Icon(Icons.location_pin),
                   SizedBox(width: 20),
                   Text(
-                    "Connect to Stethoscope", style: TextStyle(
-                    fontSize: 17
+                    "Stethoscope Placement Guide", style: TextStyle(
+                      fontSize: 17
                   ),
                   ),
                   Spacer(),
-                  GestureDetector(
-                    onTap: (){},
-                    child: Icon(Icons.arrow_forward),
-                  )
+                  // This nested GestureDetector is redundant. The outer one handles the tap.
+                  Icon(Icons.arrow_forward),
                 ],
               ),
-              SizedBox(height: 30),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => PlacementGuide()
-                      )
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.location_pin),
-                    SizedBox(width: 20),
-                    Text(
-                      "Stethoscope Placement Guide", style: TextStyle(
-                        fontSize: 17
-                    ),
-                    ),
-                    Spacer(),
-                    GestureDetector(
-                      onTap: (){},
-                      child: Icon(Icons.arrow_forward),
-                    )
-                  ],
+            ),
+            const SizedBox(height: 30),
+            const Row(
+              children: [
+                Text(
+                  "Account & Security", style: TextStyle(
+                    fontSize: 20
                 ),
-              ),
-              SizedBox(height: 30),
-              Row(
+                )
+              ],
+            ),
+            const SizedBox(height: 30),
+            GestureDetector(
+              onTap: (){
+                Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => const ProfilePage()
+                )
+                );
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Account & Security", style: TextStyle(
-                      fontSize: 20
+                  Icon(Icons.person),
+                  SizedBox(width: 20),
+                  Text(
+                    "Manage Profile", style: TextStyle(
+                      fontSize: 17
                   ),
-                  )
+                  ),
+                  Spacer(),
+                  Icon(Icons.arrow_forward),
                 ],
               ),
-              SizedBox(height: 30),
-              GestureDetector(
-                onTap: (){
-                  Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => ProfilePage()
-                  )
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.person),
-                    SizedBox(width: 20),
-                    Text(
-                      "Manage Profile", style: TextStyle(
-                        fontSize: 17
-                    ),
-                    ),
-                    Spacer(),
-                    GestureDetector(
-                      onTap: (){},
-                      child: Icon(Icons.arrow_forward),
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(height: 30),
-              GestureDetector(
-                onTap: (){
-                  Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => ChangePassword()
-                  )
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.lock_outline),
-                    SizedBox(width: 20),
-                    Text(
-                      "Change Password", style: TextStyle(
-                        fontSize: 17
-                    ),
-                    ),
-                    Spacer(),
-                    GestureDetector(
-                      onTap: (){},
-                      child: Icon(Icons.arrow_forward),
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(height: 30),
-              Row(
+            ),
+            const SizedBox(height: 30),
+            GestureDetector(
+              onTap: (){
+                Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => const ChangePassword()
+                )
+                );
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Account & Security", style: TextStyle(
-                      fontSize: 20
+                  Icon(Icons.lock_outline),
+                  SizedBox(width: 20),
+                  Text(
+                    "Change Password", style: TextStyle(
+                      fontSize: 17
                   ),
-                  )
+                  ),
+                  Spacer(),
+                  Icon(Icons.arrow_forward),
                 ],
               ),
-              SizedBox(height: 30),
-              GestureDetector(
-                onTap: (){
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => UserManualScreen()
-                      )
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.book),
-                    SizedBox(width: 20),
-                    Text(
-                      "User Manual", style: TextStyle(
-                        fontSize: 17
-                    ),
-                    ),
-                    Spacer(),
-                    GestureDetector(
-                      onTap: (){},
-                      child: Icon(Icons.arrow_forward),
-                    )
-                  ],
+            ),
+            const SizedBox(height: 30),
+            const Row(
+              children: [
+                // This seems like a duplicate heading. You may want to remove it.
+                Text(
+                  "Account & Security", style: TextStyle(
+                    fontSize: 20
                 ),
+                )
+              ],
+            ),
+            const SizedBox(height: 30),
+            GestureDetector(
+              onTap: (){
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => UserManualScreen()
+                    )
+                );
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.book),
+                  SizedBox(width: 20),
+                  Text(
+                    "User Manual", style: TextStyle(
+                      fontSize: 17
+                  ),
+                  ),
+                  Spacer(),
+                  Icon(Icons.arrow_forward),
+                ],
               ),
-              SizedBox(height: 30),
-              GestureDetector(
-                onTap: (){
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => TermsPage()
-                      )
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.rule),
-                    SizedBox(width: 20),
-                    Text(
-                      "Terms & Privacy Policy", style: TextStyle(
-                        fontSize: 17
-                    ),
-                    ),
-                    Spacer(),
-                    GestureDetector(
-                      onTap: (){},
-                      child: Icon(Icons.arrow_forward),
+            ),
+            const SizedBox(height: 30),
+            GestureDetector(
+              onTap: (){
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const TermsPage()
                     )
-                  ],
-                ),
-              )
-            ],
-          ),
+                );
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.rule),
+                  SizedBox(width: 20),
+                  Text(
+                    "Terms & Privacy Policy", style: TextStyle(
+                      fontSize: 17
+                  ),
+                  ),
+                  Spacer(),
+                  Icon(Icons.arrow_forward),
+                ],
+              ),
+            )
+          ],
         ),
       ),
     );

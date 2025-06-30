@@ -5,13 +5,13 @@ import 'package:heartcloud/utils/colors.dart';
 import 'package:waveform_flutter/waveform_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:provider/provider.dart';
+import 'package:heartcloud/utils/auth_provider.dart';
+import 'package:heartcloud/pages/settings/manageProfile.dart';
 
 class FirstName extends StatelessWidget {
   final TextEditingController controller;
-
   const FirstName({super.key, required this.controller});
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -42,9 +42,7 @@ class FirstName extends StatelessWidget {
 
 class LastName extends StatelessWidget {
   final TextEditingController controller;
-
   const LastName({super.key, required this.controller});
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -75,9 +73,7 @@ class LastName extends StatelessWidget {
 
 class EmailField extends StatelessWidget {
   final TextEditingController controller;
-
   const EmailField({super.key, required this.controller});
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -106,9 +102,7 @@ class EmailField extends StatelessWidget {
 
 class AgeField extends StatelessWidget {
   final TextEditingController controller;
-
   const AgeField({super.key, required this.controller});
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -136,20 +130,15 @@ class AgeField extends StatelessWidget {
   }
 }
 
-
-
 class PasswordField extends StatefulWidget {
   final TextEditingController controller;
-
   const PasswordField({super.key, required this.controller});
-
   @override
   State<PasswordField> createState() => _PasswordFieldState();
 }
 
 class _PasswordFieldState extends State<PasswordField> {
   bool _obscureText = true;
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -185,19 +174,15 @@ class _PasswordFieldState extends State<PasswordField> {
   }
 }
 
-
 class ConfirmPasswordField extends StatefulWidget {
   final TextEditingController controller;
-
   const ConfirmPasswordField({super.key, required this.controller});
-
   @override
   State<ConfirmPasswordField> createState() => _ConfirmPasswordFieldState();
 }
 
 class _ConfirmPasswordFieldState extends State<ConfirmPasswordField> {
   bool _obscureText = true;
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -236,9 +221,7 @@ class _ConfirmPasswordFieldState extends State<ConfirmPasswordField> {
 class RoleDropdown extends StatefulWidget {
   final String? selectedRole;
   final Function(String) onRoleChanged;
-
   const RoleDropdown({Key? key, required this.selectedRole, required this.onRoleChanged}) : super(key: key);
-
   @override
   State<RoleDropdown> createState() => _RoleDropdownState();
 }
@@ -279,17 +262,14 @@ class _RoleDropdownState extends State<RoleDropdown> {
   }
 }
 
-
 class GenderDropdown extends StatefulWidget {
   const GenderDropdown({super.key});
-
   @override
   State<GenderDropdown> createState() => _GenderDropdownState();
 }
 
 class _GenderDropdownState extends State<GenderDropdown> {
   String _selectedGender = "Male";
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -298,7 +278,7 @@ class _GenderDropdownState extends State<GenderDropdown> {
         decoration: InputDecoration(
           filled: true,
           fillColor: Colors.white,
-          prefixIcon: const Icon(Icons.person_outline), // Icon for consistency
+          prefixIcon: const Icon(Icons.person_outline),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
           ),
@@ -327,9 +307,7 @@ class _GenderDropdownState extends State<GenderDropdown> {
 
 class ContactInformation extends StatelessWidget {
   final TextEditingController controller;
-
   const ContactInformation({super.key, required this.controller});
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -362,27 +340,18 @@ class ContactInformation extends StatelessWidget {
   }
 }
 
-
-
-class StatusCard extends StatefulWidget {
+class StatusCard extends StatelessWidget {
   final String title;
   final String value;
   final IconData icon;
   final double? progress;
-
   const StatusCard({
     super.key,
     required this.title,
     required this.value,
     required this.icon,
-    this.progress
+    this.progress,
   });
-
-  @override
-  State<StatusCard> createState() => _StatusCardState();
-}
-
-class _StatusCardState extends State<StatusCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -392,100 +361,107 @@ class _StatusCardState extends State<StatusCard> {
         color: darkBlue,
         borderRadius: BorderRadius.circular(20),
       ),
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (widget.progress != null)
+          if (progress != null)
             Stack(
               alignment: Alignment.center,
               children: [
-                CircularProgressIndicator(
-                  value: widget.progress,
-                  strokeWidth: 5,
-                  backgroundColor: Colors.grey[300],
-                  valueColor: const AlwaysStoppedAnimation(Colors.green),
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 5,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: const AlwaysStoppedAnimation(Colors.green),
+                  ),
                 ),
-                Icon(
-                  widget.icon, color: Colors.white, size: 30,
-                )
+                Icon(icon, color: Colors.white, size: 24),
               ],
             )
           else
-            Icon(widget.icon, color: Colors.white, size: 40),
-          SizedBox(height: 10),
+            Icon(icon, color: Colors.white, size: 40),
+          const SizedBox(height: 8),
           Text(
-            widget.title, style: TextStyle(
-            color: Colors.white, fontSize: 14,
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+            ),
           ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                softWrap: true,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
-          Text(
-            widget.value, style: TextStyle(
-            color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold
-          ),
-          )
         ],
       ),
     );
   }
 }
 
-class PatientCard extends StatefulWidget {
+class PatientCard extends StatelessWidget {
   final String name;
   final String date;
-  final Color backgroundColor; // Use Color for background
-  final dynamic patientData;  // Add this line to hold patient data
+  final Color backgroundColor;
+  final dynamic patientData;
 
   const PatientCard({
     super.key,
     required this.name,
     required this.date,
-    required this.backgroundColor, // Accept background color directly
+    required this.backgroundColor,
     required this.patientData
   });
 
   @override
-  State<PatientCard> createState() => _PatientCardState();
-}
-
-class _PatientCardState extends State<PatientCard> {
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PatientProfile(
-          patientData: widget.patientData,
-        )));
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8), // Spacing between cards
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: widget.backgroundColor, // Use the passed backgroundColor
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.black),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              widget.name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+    // The GestureDetector that was here has been removed.
+    // The parent widget (`PatientList`) is now responsible for handling taps.
+    // This makes the PatientCard a simple, reusable display widget.
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.black),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
-            Text(
-              "${widget.date}", // Ensures time isn't null
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
+          ),
+          Text(
+            date,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -493,7 +469,6 @@ class _PatientCardState extends State<PatientCard> {
 
 class ReplayButton extends StatefulWidget {
   const ReplayButton({super.key});
-
   @override
   State<ReplayButton> createState() => _ReplayButtonState();
 }
@@ -507,10 +482,10 @@ class _ReplayButtonState extends State<ReplayButton> {
         width: 100,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.black),
-          borderRadius: BorderRadius.circular(15)
+            border: Border.all(color: Colors.black),
+            borderRadius: BorderRadius.circular(15)
         ),
-        child: Row(
+        child: const Row(
           children: [
             Icon(Icons.replay),
             Spacer(),
@@ -524,7 +499,6 @@ class _ReplayButtonState extends State<ReplayButton> {
 
 class RecordButton extends StatefulWidget {
   const RecordButton({super.key});
-
   @override
   State<RecordButton> createState() => _RecordButtonState();
 }
@@ -541,7 +515,7 @@ class _RecordButtonState extends State<RecordButton> {
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(15)
         ),
-        child: Row(
+        child: const Row(
           children: [
             Icon(Icons.fiber_manual_record),
             Spacer(),
@@ -555,7 +529,6 @@ class _RecordButtonState extends State<RecordButton> {
 
 class PatientButton extends StatefulWidget {
   const PatientButton({super.key});
-
   @override
   State<PatientButton> createState() => _PatientButtonState();
 }
@@ -572,7 +545,7 @@ class _PatientButtonState extends State<PatientButton> {
             border: Border.all(color: Colors.black),
             borderRadius: BorderRadius.circular(15)
         ),
-        child: Row(
+        child: const Row(
           children: [
             Icon(Icons.person),
             Spacer(),
@@ -586,76 +559,68 @@ class _PatientButtonState extends State<PatientButton> {
 
 class StethologsCard extends StatelessWidget {
   final QueryDocumentSnapshot recordingData;
+  final Function(DocumentSnapshot) onPatientSelected;
 
-  const StethologsCard({super.key, required this.recordingData});
+  const StethologsCard({
+    super.key,
+    required this.recordingData,
+    required this.onPatientSelected
+  });
 
-  Future<void> _navigateToPatientProfile(BuildContext context, String doctorId, String patientId) async {
+  Future<void> _navigateToPatientProfileForDoctor(BuildContext context) async {
+    final String doctorId = recordingData.get('doctorId') ?? '';
+    final String patientId = recordingData.get('patientId') ?? '';
+
+    if (doctorId.isEmpty || patientId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Patient information missing.')));
+      return;
+    }
+
     try {
-      DocumentSnapshot patientDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(doctorId)
-          .collection('patients')
-          .doc(patientId)
-          .get();
-
+      DocumentSnapshot patientDoc = await FirebaseFirestore.instance.collection('users').doc(doctorId).collection('patients').doc(patientId).get();
       if (patientDoc.exists) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PatientProfile(patientData: patientDoc),
-          ),
-        );
+        onPatientSelected(patientDoc);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Patient profile not found.'), duration: Duration(seconds: 2))
-        );
-        print("Patient document not found for patientId: $patientId under doctorId: $doctorId");
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Patient profile not found.')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading patient profile: ${e.toString().split('\n').first}'))
-      );
-      print("Error fetching patient document for profile: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading patient profile: $e')));
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    // Extract data safely with fallbacks
     String patientFirstName = recordingData.get('patientFirstName') ?? 'N/A';
     String patientLastName = recordingData.get('patientLastName') ?? 'N/A';
     String patientFullName = (patientFirstName == 'N/A' && patientLastName == 'N/A') ? 'Unknown Patient' : '$patientFirstName $patientLastName'.trim();
-
     Timestamp? recordedAtTimestamp = recordingData.get('recordedAt') as Timestamp?;
     String recordedDate = recordedAtTimestamp != null
         ? DateFormat('MMM d, yyyy - hh:mm a').format(recordedAtTimestamp.toDate())
         : 'Date N/A';
-
     String checkupType = recordingData.get('auscultationType') ?? 'Type N/A';
-    String doctorId = recordingData.get('doctorId') ?? ''; // Needed for patient profile navigation
-    String patientId = recordingData.get('patientId') ?? ''; // Needed for patient profile navigation
 
-
-    return InkWell( // Make the card tappable
+    return InkWell(
       onTap: () {
-        if (doctorId.isNotEmpty && patientId.isNotEmpty) {
-          _navigateToPatientProfile(context, doctorId, patientId);
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+        if (authProvider.isDoctor) {
+          _navigateToPatientProfileForDoctor(context);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Patient information missing for navigation.'), duration: Duration(seconds: 2))
-          );
-          print("Error: doctorId or patientId is missing in recording document.");
+          // In the new architecture, patients navigate to their main profile page
+          // via the BottomNavBar, not by clicking a log item.
+          // If you want clicking a log to do something, you can add it here.
+          // For now, we navigate to the main profile page for consistency.
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
         }
       },
       child: Container(
-        padding: const EdgeInsets.all(15), // Increased padding
-        margin: const EdgeInsets.only(bottom: 15), // Added margin between cards
+        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300), // Softer border
-          borderRadius: BorderRadius.circular(12), // Softer radius
-          color: PatientCardColor2, // Ensure this color is defined in your colors.dart
-          boxShadow: [ // Optional: Add a subtle shadow
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+          color: PatientCardColor2,
+          boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
@@ -665,14 +630,14 @@ class StethologsCard extends StatelessWidget {
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // Align text to start
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               patientFullName,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
-                color: darkBlue, // Assuming darkBlue is defined
+                color: darkBlue,
               ),
             ),
             const SizedBox(height: 8),
@@ -692,7 +657,7 @@ class StethologsCard extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: color ?? Colors.grey.shade700),
         const SizedBox(width: 8),
-        Expanded( // Allow text to wrap if too long
+        Expanded(
           child: Text(
             text,
             style: TextStyle(fontSize: 14, color: color ?? Colors.black87),
@@ -705,14 +670,12 @@ class StethologsCard extends StatelessWidget {
 
 class WaveForm extends StatefulWidget {
   const WaveForm({super.key});
-
   @override
   State<WaveForm> createState() => _WaveFormState();
 }
 
 class _WaveFormState extends State<WaveForm> {
   final Stream<Amplitude> _amplitudeStream = createRandomAmplitudeStream();
-
   @override
   Widget build(BuildContext context) => AnimatedWaveList(
       stream: _amplitudeStream,

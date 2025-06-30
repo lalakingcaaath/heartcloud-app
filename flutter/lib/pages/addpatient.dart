@@ -1,8 +1,9 @@
+// addpatient.dart - CORRECTED WITH DOCTOR ASSIGNMENT LOGIC
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:heartcloud/widgets.dart';
 import 'package:heartcloud/utils/colors.dart';
-import 'package:heartcloud/utils/bottom_navbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class Addpatient extends StatefulWidget {
@@ -17,14 +18,10 @@ class _AddpatientState extends State<Addpatient> {
   final TextEditingController _lastName = TextEditingController();
   final TextEditingController _contactInfo = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
+  // FIX: Added a controller for the patient's email
+  final TextEditingController _emailController = TextEditingController();
   String? _selectedGender;
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  bool _isLoading = false; // To show a loading indicator
 
   @override
   void dispose() {
@@ -32,164 +29,164 @@ class _AddpatientState extends State<Addpatient> {
     _lastName.dispose();
     _contactInfo.dispose();
     _ageController.dispose();
+    _emailController.dispose(); // Dispose the new controller
     super.dispose();
   }
+
+  // FIX: Encapsulated the logic into a separate function
+  Future<void> _addAndAssignPatient() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final String firstName = _firstName.text.trim();
+      final String lastName = _lastName.text.trim();
+      final String contactInfo = _contactInfo.text.trim();
+      final String ageText = _ageController.text.trim();
+      final String patientEmail = _emailController.text.trim().toLowerCase();
+      final int? age = int.tryParse(ageText);
+      final String? doctorId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (doctorId == null) {
+        throw Exception("Doctor not logged in.");
+      }
+
+      if (firstName.isEmpty ||
+          lastName.isEmpty ||
+          contactInfo.isEmpty ||
+          age == null ||
+          _selectedGender == null ||
+          patientEmail.isEmpty) {
+        throw Exception("Please fill out all fields correctly.");
+      }
+
+      // Step 1: Find the patient's user document by their email.
+      final patientQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: patientEmail)
+          .where('role', isEqualTo: 'patient') // Ensure we only find patients
+          .limit(1)
+          .get();
+
+      if (patientQuery.docs.isEmpty) {
+        throw Exception("No patient found with the email: $patientEmail");
+      }
+
+      final patientDoc = patientQuery.docs.first;
+      final String patientId = patientDoc.id;
+
+      // Step 2: Add the patient's details to the DOCTOR's subcollection.
+      // This is what you were already doing.
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(doctorId)
+          .collection('patients')
+          .doc(patientId) // Use patient's UID as doc ID for consistency
+          .set({
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': patientEmail,
+        'contactInfo': contactInfo,
+        'age': age,
+        'gender': _selectedGender,
+        'createdAt': FieldValue.serverTimestamp(),
+        // Storing the UID is good practice
+        'uid': patientId,
+      });
+
+      // Step 3: Update the PATIENT's main user document with the doctor's ID.
+      // This is the critical new step.
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(patientId)
+          .update({
+        'assignedDoctorId': doctorId,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Patient added and assigned successfully!")),
+        );
+        // Navigate back or clear fields
+        Navigator.of(context).pop();
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.toString().replaceFirst("Exception: ", "")}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Add New Patient"),
+        backgroundColor: Colors.white,
+        foregroundColor: darkBlue,
+        elevation: 1,
+      ),
       body: SingleChildScrollView(
         child: Container(
-          margin: const EdgeInsets.only(left: 40, right: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch, // Makes button stretch
             children: [
-              const SizedBox(height: 70),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Patient Profile Data Entry",
-                    style: TextStyle(
-                      color: darkBlue,
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 50),
-              Center(child: FirstName(controller: _firstName)),
               const SizedBox(height: 20),
-              Center(child: LastName(controller: _lastName)),
+              // FIX: Added an email field for the doctor to find the patient.
+              EmailField(controller: _emailController),
               const SizedBox(height: 20),
-
-              // Gender Dropdown
-              Center(
-                child: DropdownButtonFormField<String>(
-                  value: _selectedGender,
-                  hint: const Text("Select Gender"),
-                  items: ["Male", "Female"].map((String gender) {
-                    return DropdownMenuItem<String>(
-                      value: gender,
-                      child: Text(gender),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedGender = newValue;
-                    });
-                  },
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: "Gender",
-                  ),
+              FirstName(controller: _firstName),
+              const SizedBox(height: 20),
+              LastName(controller: _lastName),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                value: _selectedGender,
+                hint: const Text("Select Gender"),
+                items: ["Male", "Female"].map((String gender) {
+                  return DropdownMenuItem<String>(value: gender, child: Text(gender));
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() => _selectedGender = newValue);
+                },
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: "Gender",
                 ),
               ),
-
               const SizedBox(height: 20),
-              Center(child: AgeField(controller: _ageController)),
+              AgeField(controller: _ageController),
               const SizedBox(height: 20),
-              Center(child: ContactInformation(controller: _contactInfo)),
+              ContactInformation(controller: _contactInfo),
               const SizedBox(height: 30),
-
-              // Add Patient Button
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
-                        try {
-                          final String firstName = _firstName.text.trim();
-                          final String lastName = _lastName.text.trim();
-                          final String contactInfo = _contactInfo.text.trim();
-                          final String ageText = _ageController.text.trim();
-                          final int? age = int.tryParse(ageText);
-
-                          // Field validation
-                          if (firstName.isEmpty ||
-                              lastName.isEmpty ||
-                              contactInfo.isEmpty ||
-                              age == null ||
-                              _selectedGender == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Please fill out all fields correctly."),
-                              ),
-                            );
-                            return;
-                          }
-
-                          final user = FirebaseAuth.instance.currentUser;
-                          String? doctorId = user?.uid;
-
-                          // Store data to Firestore
-                          await FirebaseFirestore.instance.collection('users')
-                          .doc(doctorId)
-                          .collection('patients')
-                              .add({
-                            'firstName': firstName,
-                            'lastName': lastName,
-                            'contactInfo': contactInfo,
-                            'age': age,
-                            'gender': _selectedGender, // Add gender to database
-                            'createdAt': FieldValue.serverTimestamp(),
-                          });
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Patient added successfully!"),
-                            ),
-                          );
-
-                          // Clear fields after submission
-                          _firstName.clear();
-                          _lastName.clear();
-                          _contactInfo.clear();
-                          _ageController.clear();
-                          setState(() {
-                            _selectedGender = null;
-                          });
-                        } catch (e) {
-                          print("Error adding patient: $e");
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Failed to add patient."),
-                            ),
-                          );
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: darkBlue,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "Add Patient",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              ElevatedButton(
+                onPressed: _isLoading ? null : _addAndAssignPatient,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: darkBlue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                )
+                    : const Text("Add and Assign Patient", style: TextStyle(fontSize: 18)),
               ),
             ],
           ),
         ),
-      ),
-
-      // Bottom Navigation Bar
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
       ),
     );
   }

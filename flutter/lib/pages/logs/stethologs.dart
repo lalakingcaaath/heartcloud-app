@@ -1,40 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:heartcloud/utils/auth_provider.dart';
 import 'package:heartcloud/utils/colors.dart';
-import 'package:heartcloud/utils/bottom_navbar.dart';
-import 'package:heartcloud/widgets.dart'; // This should contain the updated StethologsCard
+import 'package:heartcloud/pages/patient_profile/patientProfilePage.dart';
+import 'package:heartcloud/pages/settings/manageProfile.dart';
+import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // For current user
+import 'package:provider/provider.dart';
+import 'package:heartcloud/utils/app_user.dart';
 
 class StethoLogs extends StatefulWidget {
-  const StethoLogs({super.key});
+  final Function(DocumentSnapshot) onPatientSelected;
+  const StethoLogs({super.key, required this.onPatientSelected});
 
   @override
   State<StethoLogs> createState() => _StethoLogsState();
 }
 
 class _StethoLogsState extends State<StethoLogs> {
-  int _selectedIndex = 0;
   String _searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    // Handle navigation if your BottomNavBar does that
-  }
-
-  String? get _currentDoctorId {
-    return FirebaseAuth.instance.currentUser?.uid;
-  }
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
+      if (mounted) {
+        setState(() {
+          _searchQuery = _searchController.text.toLowerCase();
+        });
+      }
     });
   }
 
@@ -46,16 +40,22 @@ class _StethoLogsState extends State<StethoLogs> {
 
   @override
   Widget build(BuildContext context) {
-    final String? doctorId = _currentDoctorId;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final bool isPatient = authProvider.isPatient;
+    final AppUser? currentUser = authProvider.appUser;
+
+    final String subtitle = isPatient
+        ? "View your past recorded stethoscope sessions."
+        : "View past patient checkups and recorded stethoscope sessions.";
 
     return Scaffold(
-      body: SingleChildScrollView( // Keep SingleChildScrollView for overall page scroll
+      body: SingleChildScrollView(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), // Adjusted margin
-          padding: const EdgeInsets.only(top: 50), // Adjusted padding for status bar
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.only(top: 50),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start, // Align content to start
-            crossAxisAlignment: CrossAxisAlignment.start, // Align text to start
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 "Stethoscope Logs",
@@ -66,52 +66,64 @@ class _StethoLogsState extends State<StethoLogs> {
                 ),
               ),
               const SizedBox(height: 5),
-              const Text(
-                "View past patient checkups and recorded stethoscope sessions.",
-                style: TextStyle(
+              Text(
+                subtitle,
+                style: const TextStyle(
                   fontStyle: FontStyle.italic,
-                  fontSize: 13, // Slightly larger for readability
+                  fontSize: 13,
                   color: Colors.grey,
                 ),
               ),
               const SizedBox(height: 20),
-              SearchBar( // Using Flutter's official SearchBar
+              SearchBar(
                 controller: _searchController,
                 leading: const Icon(Icons.search),
                 hintText: "Search by patient name or type...",
-                onChanged: (query) { // For live search
+                onChanged: (query) {
                   setState(() {
                     _searchQuery = query.toLowerCase();
                   });
                 },
-                // elevation: MaterialStateProperty.all(1.0), // Optional: subtle elevation
               ),
               const SizedBox(height: 20),
-              if (doctorId == null)
-                const Center(child: Text("Please log in to view stethoscope logs."))
+              if (currentUser == null)
+                const Center(child: Text("Please log in to view logs."))
               else
                 StreamBuilder<QuerySnapshot>(
-                  // Querying the 'auscultation_recordings' collection group
-                  // and filtering by the current doctor's ID.
-                  // This requires 'doctorId' field in your recording documents.
-                  stream: FirebaseFirestore.instance
-                      .collectionGroup('auscultation_recordings')
-                      .where('doctorId', isEqualTo: doctorId)
-                      .orderBy('recordedAt', descending: true)
-                      .snapshots(),
+                  stream: () {
+                    Query query = FirebaseFirestore.instance.collectionGroup('auscultation_recordings');
+                    if (isPatient) {
+                      return query
+                          .where('patientId', isEqualTo: currentUser.uid)
+                          .orderBy('recordedAt', descending: true)
+                          .snapshots();
+                    } else {
+                      return query
+                          .where('doctorId', isEqualTo: currentUser.uid)
+                          .orderBy('recordedAt', descending: true)
+                          .snapshots();
+                    }
+                  }(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      print("Error fetching stetho logs: ${snapshot.error}");
-                      return Center(child: Text('Error: ${snapshot.error}'));
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Error: ${snapshot.error}\n\nThis query may require a Firestore index. Please check the debug console for a link to create it.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return const Center(
                           child: Padding(
                             padding: EdgeInsets.all(20.0),
-                            child: Text('No stethoscope logs found for your patients.', style: TextStyle(fontSize: 16)),
+                            child: Text('No stethoscope logs found.', style: TextStyle(fontSize: 16)),
                           )
                       );
                     }
@@ -121,9 +133,10 @@ class _StethoLogsState extends State<StethoLogs> {
 
                     if (_searchQuery.isNotEmpty) {
                       filteredRecordings = allRecordings.where((doc) {
-                        String patientFirstName = (doc.get('patientFirstName') as String? ?? '').toLowerCase();
-                        String patientLastName = (doc.get('patientLastName') as String? ?? '').toLowerCase();
-                        String auscultationType = (doc.get('auscultationType') as String? ?? '').toLowerCase();
+                        final data = doc.data() as Map<String, dynamic>;
+                        final String patientFirstName = (data['patientFirstName'] as String? ?? '').toLowerCase();
+                        final String patientLastName = (data['patientLastName'] as String? ?? '').toLowerCase();
+                        final String auscultationType = (data['auscultationType'] as String? ?? '').toLowerCase();
 
                         return patientFirstName.contains(_searchQuery) ||
                             patientLastName.contains(_searchQuery) ||
@@ -131,7 +144,7 @@ class _StethoLogsState extends State<StethoLogs> {
                       }).toList();
                     }
 
-                    if (filteredRecordings.isEmpty && _searchQuery.isNotEmpty) {
+                    if (filteredRecordings.isEmpty) {
                       return const Center(
                           child: Padding(
                             padding: EdgeInsets.all(20.0),
@@ -140,14 +153,15 @@ class _StethoLogsState extends State<StethoLogs> {
                       );
                     }
 
-
-                    // Use ListView.builder for dynamic list
                     return ListView.builder(
-                      shrinkWrap: true, // Important for ListView inside SingleChildScrollView
-                      physics: const NeverScrollableScrollPhysics(), // Disable ListView's own scrolling
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: filteredRecordings.length,
                       itemBuilder: (context, index) {
-                        return StethologsCard(recordingData: filteredRecordings[index]);
+                        return StethologsCard(
+                          recordingData: filteredRecordings[index],
+                          onPatientSelected: widget.onPatientSelected,
+                        );
                       },
                     );
                   },
@@ -156,10 +170,92 @@ class _StethoLogsState extends State<StethoLogs> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+    );
+  }
+}
+
+class StethologsCard extends StatelessWidget {
+  final QueryDocumentSnapshot recordingData;
+  final Function(DocumentSnapshot) onPatientSelected;
+
+  const StethologsCard({
+    super.key,
+    required this.recordingData,
+    required this.onPatientSelected
+  });
+
+  Future<void> _navigateToPatientProfileForDoctor(BuildContext context) async {
+    final String doctorId = recordingData.get('doctorId') ?? '';
+    final String patientId = recordingData.get('patientId') ?? '';
+
+    try {
+      DocumentSnapshot patientDoc = await FirebaseFirestore.instance.collection('users').doc(doctorId).collection('patients').doc(patientId).get();
+      if (patientDoc.exists) {
+        onPatientSelected(patientDoc);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Patient profile not found.')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading patient profile: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String patientFirstName = recordingData.get('patientFirstName') ?? 'N/A';
+    String patientLastName = recordingData.get('patientLastName') ?? 'N/A';
+    String patientFullName = '$patientFirstName $patientLastName'.trim();
+    Timestamp? recordedAtTimestamp = recordingData.get('recordedAt') as Timestamp?;
+    String recordedDate = recordedAtTimestamp != null ? DateFormat('MMM d, yyyy - hh:mm a').format(recordedAtTimestamp.toDate()) : 'Date N/A';
+    String checkupType = recordingData.get('auscultationType') ?? 'Type N/A';
+
+    return InkWell(
+      onTap: () {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+        if (authProvider.isDoctor) {
+          _navigateToPatientProfileForDoctor(context);
+        } else {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        margin: const EdgeInsets.only(bottom: 15),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(12),
+          color: PatientCardColor2,
+          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 1, blurRadius: 3, offset: const Offset(0, 2))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(patientFullName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: darkBlue)),
+            const SizedBox(height: 8),
+            _buildInfoRow(Icons.calendar_today_outlined, "Recorded: $recordedDate"),
+            const SizedBox(height: 6),
+            _buildInfoRow(Icons.medical_services_outlined, "Type: $checkupType"),
+            const SizedBox(height: 6),
+            _buildInfoRow(Icons.check_circle_outline, "Status: Recorded", color: Colors.green.shade700),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, {Color? color}) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color ?? Colors.grey.shade700),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 14, color: color ?? Colors.black87),
+          ),
+        ),
+      ],
     );
   }
 }

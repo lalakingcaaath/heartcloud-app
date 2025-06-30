@@ -1,9 +1,11 @@
+// login.dart - CORRECTED
+
 import 'package:flutter/material.dart';
-import 'package:heartcloud/pages/homepage.dart';
+import 'package:heartcloud/utils/auth_provider.dart'; // FIX: Import AuthProvider
 import 'package:heartcloud/utils/colors.dart';
 import 'package:heartcloud/widgets.dart';
+import 'package:provider/provider.dart'; // FIX: Import Provider
 import 'register.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:heartcloud/pages/settings/password/changePassword.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,9 +16,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Controllers are correct
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isSigningIn = false; // To disable the button during sign-in
 
   @override
   void dispose(){
@@ -25,18 +28,42 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // FIX: Updated signIn method to use the AuthProvider
   Future<void> signIn() async {
+    // Prevent multiple sign-in attempts
+    if (_isSigningIn) return;
+
+    setState(() {
+      _isSigningIn = true;
+    });
+
+    // Get the AuthProvider instance
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-          email: _emailController.text.trim(), password: _passwordController.text.trim()
+      // Call the signInWithEmail method from the provider
+      await authProvider.signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
-      print("User signed in: ${userCredential.user?.email}");
-      Navigator.push(context, MaterialPageRoute(builder: (context) => Homepage()));
+
+      // IMPORTANT: DO NOT NAVIGATE HERE.
+      // The Wrapper will handle navigation automatically when the auth state changes.
+
     } catch (e) {
-      print("Error signing in: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login failed. Please check your credentials."))
-      );
+      // If sign-in fails, show an error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Login failed. Please check your credentials."))
+        );
+      }
+    } finally {
+      // Re-enable the button after the attempt is finished
+      if (mounted) {
+        setState(() {
+          _isSigningIn = false;
+        });
+      }
     }
   }
 
@@ -67,7 +94,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   Container(
-                    margin: EdgeInsets.only(top: 50),
+                    margin: const EdgeInsets.only(top: 50),
                     child: Text(
                       "WELCOME BACK",
                       style: TextStyle(
@@ -111,9 +138,7 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Expanded(
                           child: GestureDetector(
-                            onTap: (){
-                              signIn();
-                            },
+                            onTap: _isSigningIn ? null : signIn, // Disable tap when signing in
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
@@ -121,7 +146,13 @@ class _LoginPageState extends State<LoginPage> {
                                   borderRadius: BorderRadius.circular(10)
                               ),
                               child: Center(
-                                child: Text(
+                                child: _isSigningIn
+                                    ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                                )
+                                    : const Text(
                                   "Sign In", style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18
