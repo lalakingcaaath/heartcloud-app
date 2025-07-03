@@ -90,9 +90,78 @@ class _PatientProfileState extends State<PatientProfile> {
     return "$minutes:$seconds";
   }
 
+  // **** START OF NEW FEATURE: Add/Edit Comment Logic ****
+  Future<void> _saveComment(String patientId, String recordingId, String comment) async {
+    final doctorId = _currentDoctorId;
+    if (doctorId == null) return;
+
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(doctorId)
+          .collection('patients')
+          .doc(patientId)
+          .collection('auscultation_recordings')
+          .doc(recordingId);
+
+      await docRef.update({'doctorComment': comment});
+
+      if(mounted) {
+        Navigator.of(context).pop(); // Close the dialog
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Comment saved."), backgroundColor: Colors.green,));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to save comment: $e"), backgroundColor: Colors.red));
+    }
+  }
+
+  void _showCommentDialog(QueryDocumentSnapshot recordingDoc) {
+    final String patientId = widget.patientData.id;
+    final String recordingId = recordingDoc.id;
+    final String currentComment = (recordingDoc.data() as Map<String, dynamic>).containsKey('doctorComment')
+        ? recordingDoc['doctorComment']
+        : "";
+
+    final TextEditingController commentController = TextEditingController(text: currentComment);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Doctor's Comment"),
+          content: TextField(
+            controller: commentController,
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText: "Enter your findings here...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _saveComment(patientId, recordingId, commentController.text);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  // **** END OF NEW FEATURE ****
+
+
   Widget _buildAudioPlayerControls(QueryDocumentSnapshot recordingDoc) {
     String audioUrl = recordingDoc['downloadUrl'] as String;
     bool isCurrentlyPlayingThis = _currentlyPlayingUrl == audioUrl;
+
+    final data = recordingDoc.data() as Map<String, dynamic>;
+    final String doctorComment = data.containsKey('doctorComment') ? data['doctorComment'] : "";
 
     return Card(
       elevation: 2,
@@ -102,11 +171,22 @@ class _PatientProfileState extends State<PatientProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Type: ${recordingDoc['auscultationType'] ?? 'N/A'}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            // Row for title and edit button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Type: ${data['auscultationType'] ?? 'N/A'}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                IconButton(
+                  icon: const Icon(Icons.edit_note, color: Colors.blueGrey),
+                  tooltip: "Add/Edit Comment",
+                  onPressed: () => _showCommentDialog(recordingDoc),
+                )
+              ],
+            ),
             const SizedBox(height: 4),
-            Text("Recorded: ${recordingDoc['recordedAt'] != null ? DateFormat('MMM d, yyyy - hh:mm a').format((recordingDoc['recordedAt'] as Timestamp).toDate()) : 'N/A'}", style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
-            Text("Filename: ${recordingDoc['fileNameInStorage'] ?? 'N/A'}", style: TextStyle(fontSize: 13, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis),
-            if (recordingDoc['durationSeconds'] != null) Text("ESP32 Duration: ${recordingDoc['durationSeconds']}s", style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            Text("Recorded: ${data['recordedAt'] != null ? DateFormat('MMM d, yyyy - hh:mm a').format((data['recordedAt'] as Timestamp).toDate()) : 'N/A'}", style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+            Text("Filename: ${data['fileNameInStorage'] ?? 'N/A'}", style: TextStyle(fontSize: 13, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis),
+            if (data['durationSeconds'] != null) Text("ESP32 Duration: ${data['durationSeconds']}s", style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -129,6 +209,24 @@ class _PatientProfileState extends State<PatientProfile> {
                   Padding(padding: const EdgeInsets.symmetric(horizontal: 16.0), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_formatDuration(_position)), Text(_formatDuration(_duration))])),
                 ],
               ),
+
+            // **** START OF NEW FEATURE: Display Comment ****
+            const Divider(height: 24),
+            Text("Doctor's Comment:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade800)),
+            const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(4)
+              ),
+              child: Text(
+                doctorComment.isNotEmpty ? doctorComment : "No comment added yet.",
+                style: TextStyle(fontStyle: doctorComment.isNotEmpty ? FontStyle.normal : FontStyle.italic, color: Colors.grey.shade700),
+              ),
+            ),
+            // **** END OF NEW FEATURE ****
           ],
         ),
       ),
